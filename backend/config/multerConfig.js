@@ -7,20 +7,22 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + '.' + file.mimetype.split('/')[1]);
+        const extension = path.extname(file.originalname); // استخدم الامتداد الأصلي
+        cb(null, `${file.fieldname}-${uniqueSuffix}${extension}`);
     }
+
 });
 
 const upload = multer({
     storage: storage,
     fileFilter: (req, file, cb) => {
-        // التحقق من نوع الملف
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
-            cb(new Error('الملف يجب أن يكون صورة'));
+            cb(new Error('الملف يجب أن يكون صورة (JPEG, PNG, GIF, إلخ.)'));
         }
     },
+
     limits: { fileSize: 1024 * 1024 * 2 }
 });
 

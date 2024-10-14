@@ -10,7 +10,9 @@ import DevelopersPage from './pages/DevelopersPage';
 import LoginPage from './pages/Auth/LoginPage'; // استيراد صفحة تسجيل الدخول
 import RegisterPage from './pages/Auth/RegisterPage'; // استيراد صفحة تسجيل الحساب الجديد
 import { UserProvider } from './context/UserContext';
-import './index.css'; // تأكد من استيراد ملف CSS الخاص بـ Tailwind
+import Termofuse from "./pages/Termofuse"
+import Privacypolicy from './pages/Privacypolicy';
+import './index.css';
 
 const App = () => {
   return (
@@ -23,8 +25,10 @@ const App = () => {
             <Route path="/auctions" element={<AuctionsPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/developers" element={<DevelopersPage />} />
-            <Route path="/login" element={<LoginPage />} /> {/* إضافة مسار صفحة تسجيل الدخول */}
-            <Route path="/register" element={<RegisterPage />} /> {/* إضافة مسار صفحة تسجيل الحساب الجديد */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/terms-of-service" element={<Termofuse />} />
+            <Route path="/privacy-policy" element={<Privacypolicy />} />
           </Routes>
         </Layout>
       </Router>

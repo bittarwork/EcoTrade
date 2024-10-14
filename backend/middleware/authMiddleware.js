@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 
+// ميدل وير للتحقق من صحة التوكن
 exports.verifyToken = (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1]; // الحصول على التوكن من الهيدر
+    const token = req.headers['authorization']?.split(' ')[1]; // استخراج التوكن من الهيدر
 
     if (!token) {
         return res.status(403).json({ message: 'ليس لديك إذن للوصول' });
@@ -11,16 +12,19 @@ exports.verifyToken = (req, res, next) => {
         if (err) {
             return res.status(401).json({ message: 'التوكن غير صالح أو منتهي' });
         }
-        req.userId = decoded.id; // تخزين معرف المستخدم في الطلب
-        req.role = decoded.role; // تخزين الدور في الطلب
-        next(); // الانتقال إلى الدالة التالية
+        // إضافة المعلومات المستخرجة من التوكن إلى الطلب
+        req.user = {
+            id: decoded.id,
+            role: decoded.role
+        };
+        next();
     });
 };
 
 // ميدل وير للتحقق من الأدوار
 exports.checkRole = (roles) => (req, res, next) => {
-    if (!roles.includes(req.role)) {
+    if (!roles.includes(req.user.role)) {
         return res.status(403).json({ message: 'ليس لديك إذن للوصول إلى هذه الموارد' });
     }
-    next(); // الانتقال إلى الدالة التالية
+    next();
 };
