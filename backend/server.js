@@ -3,7 +3,7 @@ const cors = require('cors'); // استيراد مكتبة CORS
 const userRoutes = require('./routes/userRoutes');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db.config'); // استيراد وظيفة الاتصال بقاعدة البيانات
-
+const path = require('path');
 dotenv.config(); // تحميل المتغيرات من .env
 
 const app = express();
@@ -17,7 +17,7 @@ app.use(cors({
 }));
 
 app.use(express.json()); // لتحليل JSON في الطلبات
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // اتصال بقاعدة البيانات
 connectDB(); // الاتصال بقاعدة البيانات
 

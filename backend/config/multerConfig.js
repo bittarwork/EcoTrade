@@ -1,7 +1,6 @@
 const multer = require('multer');
 const path = require('path');
 
-// إعداد Multer لتخزين الملفات المرفوعة
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/'); // مجلد حفظ الصور
@@ -12,7 +11,6 @@ const storage = multer.diskStorage({
     }
 });
 
-// إعداد خيارات Multer
 const upload = multer({
     storage: storage,
     fileFilter: (req, file, cb) => {
@@ -23,8 +21,7 @@ const upload = multer({
             cb(new Error('الملف يجب أن يكون صورة'));
         }
     },
-    limits: { fileSize: 1024 * 1024 * 2 } // الحد الأقصى لحجم الصورة 2MB
+    limits: { fileSize: 1024 * 1024 * 2 }
 });
 
-// تصدير دالة الرفع
-module.exports = upload; // قم بتصدير `upload` مباشرة
+module.exports = upload; 
