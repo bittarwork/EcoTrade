@@ -85,6 +85,6 @@ router.put(
 );
 
 // استرجاع جميع الطلبات في النظام )
-router.get('/', requestController.getAllRequests);
+router.get('/all-req', requestController.getAllRequests);
 
 module.exports = router;

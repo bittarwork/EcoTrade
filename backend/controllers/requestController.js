@@ -1,13 +1,12 @@
 const Request = require('../models/requestModel');
 const User = require('../models/userModel');
 const upload = require('../config/multerConfig'); // استيراد إعدادات Multer
-// إنشاء طلب جديد مع صور
+
 exports.createRequest = [
-    upload.array('images', 5), // السماح بتحميل حتى 5 صور لكل طلب
+    upload.array('images', 5),
     async (req, res) => {
         const { userId, address, scrapType } = req.body;
 
-        // التحقق مما إذا كانت الملفات قد تم تحميلها
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ message: 'يجب تحميل صورة واحدة على الأقل' });
         }
@@ -106,14 +105,14 @@ exports.getAllRequests = async (req, res) => {
         const requests = await Request.aggregate([
             {
                 $lookup: {
-                    from: 'users', // تأكد من أن اسم مجموعة المستخدمين هو 'users'
+                    from: 'users',
                     localField: 'userId',
                     foreignField: '_id',
                     as: 'userInfo'
                 }
             },
             {
-                $unwind: '$userInfo' // فك تجميع البيانات حسب المستخدم
+                $unwind: '$userInfo'
             },
             {
                 $group: {

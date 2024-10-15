@@ -88,6 +88,8 @@ export const UserProvider = ({ children }) => {
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            console.log("User Data:", parsedUser);
             setUser(JSON.parse(storedUser));
             checkSessionExpiration(); // تحقق من انتهاء الجلسة
         }
