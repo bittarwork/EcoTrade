@@ -7,10 +7,11 @@ import OrdersPage from './pages/OrdersPage';
 import AuctionsPage from './pages/AuctionsPage';
 import ContactPage from './pages/ContactPage';
 import DevelopersPage from './pages/DevelopersPage';
-import LoginPage from './pages/Auth/LoginPage'; // استيراد صفحة تسجيل الدخول
-import RegisterPage from './pages/Auth/RegisterPage'; // استيراد صفحة تسجيل الحساب الجديد
+import LoginPage from './pages/Auth/LoginPage';
+import RegisterPage from './pages/Auth/RegisterPage';
+import AuctionRoom from './pages/auction/AuctionRoom';
 import { UserProvider } from './context/UserContext';
-import Termofuse from "./pages/Termofuse"
+import Termofuse from "./pages/Termofuse";
 import Privacypolicy from './pages/Privacypolicy';
 import './index.css';
 
@@ -29,6 +30,7 @@ const App = () => {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/terms-of-service" element={<Termofuse />} />
             <Route path="/privacy-policy" element={<Privacypolicy />} />
+            <Route path="/auction-room/:auctionId" element={<AuctionRoom />} /> {/* مسار غرفة المزاد */}
           </Routes>
         </Layout>
       </Router>

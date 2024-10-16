@@ -4,6 +4,7 @@ import UserContext from '../context/UserContext';
 import RequestsList from '../components/RequestsList';
 import GroupedRequestsList from '../components/GroupedRequestsList';
 import RequestPopup from '../models/RequestPopup';
+import { Link } from 'react-router-dom';
 
 const OrdersPage = () => {
     const { user, loading } = useContext(UserContext);
@@ -168,14 +169,16 @@ const OrdersPage = () => {
 
     return (
         <div className="min-h-screen ">
-            {user && user.role === 'admin' ? (
-                <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">عرض كامل الطلبات المتلقاة الى الموقع</h1>
-            ) : (
-                <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">طلباتك</h1>
-            )}
+
 
             {user ? (
+
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                    {user && user.role === 'admin' ? (
+                        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">عرض كامل الطلبات المتلقاة الى الموقع</h1>
+                    ) : (
+                        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">طلباتك</h1>
+                    )}
                     {statusMessage && (
                         <div className="mt-4">
                             <p className={`font-semibold text-center ${statusMessage.includes('خطأ') ? 'text-red-500' : 'text-green-600'}`}>
@@ -234,7 +237,18 @@ const OrdersPage = () => {
 
                 </div>
             ) : (
-                <p className="text-red-500 font-semibold text-center">يرجى تسجيل الدخول للوصول إلى الطلبات.</p>
+                <div className="text-center p-6">
+                    <p className="text-lg mb-4">لا يوجد مستخدم مسجل، يرجى تسجيل الدخول.</p>
+                    <div className="flex justify-center space-x-4">
+                        <Link to="/login" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                            تسجيل الدخول
+                        </Link>
+                        <span>أو</span>
+                        <Link to="/register" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                            إنشاء حساب
+                        </Link>
+                    </div>
+                </div>
             )}
         </div>
     );
