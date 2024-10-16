@@ -3,6 +3,7 @@ const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const auctionRoutes = require('./routes/auctionRoutes');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db.config');
 const path = require('path');
@@ -33,6 +34,10 @@ app.use('/api/requests', requestRoutes);
 
 // إعداد مسارات الرسائل
 app.use('/api/messages', messageRoutes);
+
+// إعداد مسارات المزادات
+app.use('/api/auction', auctionRoutes);
+
 // بدء تشغيل السيرفر
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

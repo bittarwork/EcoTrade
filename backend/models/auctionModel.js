@@ -11,18 +11,7 @@ const auctionSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: [
-            'Metals',
-            'Plastics',
-            'Electronics',
-            'Paper and Cardboard',
-            'Furniture'
-        ],
-        required: true,
-    },
-    condition: {
-        type: String,
-        enum: ['Repairable', 'Used - Good Condition', 'Used - Fair Condition', 'Not Usable'],
+        enum: ['Metals', 'Plastics', 'Electronics', 'Paper and Cardboard', 'Furniture'],
         required: true,
     },
     startPrice: {
@@ -41,10 +30,7 @@ const auctionSchema = new mongoose.Schema({
         type: Date,
         required: true,
     },
-    images: [{
-        type: String, // روابط الصور
-        required: true,
-    }],
+    images: [String], // يمكن استخدام نوع String مباشرة
     bids: [{
         bidder: {
             type: mongoose.Schema.Types.ObjectId,
@@ -54,29 +40,7 @@ const auctionSchema = new mongoose.Schema({
             type: Number,
             required: true,
         },
-        bidTime: {
-            type: Date,
-            default: Date.now,
-        },
     }],
-    autoBid: {
-        type: Boolean,
-        default: false,
-    },
-    maxAutoBidAmount: {
-        type: Number,
-        default: 0,
-    },
-    minBidIncrement: {
-        type: Number,
-        required: true,
-        default: 1,
-    },
-    owner: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-    },
     status: {
         type: String,
         enum: ['open', 'closed', 'canceled'],
