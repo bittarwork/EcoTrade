@@ -1,7 +1,20 @@
 const Request = require('../models/requestModel');
 const User = require('../models/userModel');
-const upload = require('../config/multerConfig'); // استيراد إعدادات Multer
+const upload = require('../config/multerConfig');
 
+// دالة مساعدة لتكوين مسارات الصور الكاملة
+// دالة لبناء المسار الكامل للصور
+const getFullImagePath = (images, req) => {
+    return images.map(image => {
+        // إذا كان المسار يبدأ بـ "uploads/"، لا تضف البروتوكول والنطاق مرة أخرى
+        return image.startsWith('uploads/')
+            ? `${req.protocol}://${req.get('host')}/${image}`
+            : image; // إذا كان الرابط كاملاً، اتركه كما هو
+    });
+};
+
+
+// إنشاء طلب جديد
 exports.createRequest = [
     upload.array('images', 5),
     async (req, res) => {
@@ -11,8 +24,7 @@ exports.createRequest = [
             return res.status(400).json({ message: 'يجب تحميل صورة واحدة على الأقل' });
         }
 
-        // تكوين روابط الصور باستخدام URL الكامل
-        const images = req.files.map(file => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
+        const images = req.files.map(file => `uploads/${file.filename}`);
 
         try {
             const newRequest = new Request({
@@ -22,14 +34,15 @@ exports.createRequest = [
                 images,
             });
             await newRequest.save();
+
             res.status(201).json({
                 message: 'طلب جديد تم إنشاؤه بنجاح',
                 request: {
-                    _id: newRequest._id,
+                    id: newRequest._id,
                     userId,
                     address,
                     scrapType,
-                    images,
+                    images: getFullImagePath(images, req), // استدعاء الدالة المساعدة
                     status: newRequest.status,
                     createdAt: newRequest.createdAt,
                 }
@@ -40,34 +53,27 @@ exports.createRequest = [
     }
 ];
 
-
-// استرجاع جميع الطلبات المقدمة من قبل المستخدم الحالي
-// استرجاع جميع الطلبات المقدمة من قبل مستخدم معين بناءً على ID المستخدم
+// استرجاع الطلبات الخاصة بالمستخدم
 exports.getUserRequests = async (req, res) => {
-    const userId = req.params.id; // الحصول على ID المستخدم من المعاملات
+    const userId = req.params.id;
 
     try {
-        // استرجاع جميع الطلبات المتعلقة بالمستخدم
         const requests = await Request.find({ userId }).populate('userId', 'name email');
 
-        // تنسيق الطلبات للرد
         const formattedRequests = requests.map(request => ({
-            _id: request._id,
+            id: request._id,
             address: request.address,
             scrapType: request.scrapType,
-            images: request.images.map(image => `${req.protocol}://${req.get('host')}/${image}`),
+            images: getFullImagePath(request.images, req), // استدعاء الدالة المساعدة
             status: request.status,
             createdAt: request.createdAt,
         }));
 
-        // إرسال الطلبات للمستخدم
         res.status(200).json(formattedRequests);
     } catch (error) {
         res.status(500).json({ message: 'فشل في استرجاع الطلبات', error: error.message });
     }
 };
-
-
 
 // تحديث حالة الطلب
 exports.updateRequestStatus = async (req, res) => {
@@ -86,10 +92,10 @@ exports.updateRequestStatus = async (req, res) => {
         res.status(200).json({
             message: 'تم تحديث حالة الطلب بنجاح',
             request: {
-                _id: updatedRequest._id,
+                id: updatedRequest._id,
                 address: updatedRequest.address,
                 scrapType: updatedRequest.scrapType,
-                images: updatedRequest.images.map(image => `${req.protocol}://${req.get('host')}/${image}`),
+                images: getFullImagePath(updatedRequest.images, req), // استدعاء الدالة المساعدة
                 status: updatedRequest.status,
                 createdAt: updatedRequest.createdAt,
             }
@@ -99,8 +105,7 @@ exports.updateRequestStatus = async (req, res) => {
     }
 };
 
-// استرجاع جميع الطلبات في النظام مجمعة حسب المستخدم
-exports.getAllRequests = async (req, res) => {
+exports.getRequestsGroupedByUser = async (req, res) => {
     try {
         const requests = await Request.aggregate([
             {
@@ -108,42 +113,73 @@ exports.getAllRequests = async (req, res) => {
                     from: 'users',
                     localField: 'userId',
                     foreignField: '_id',
-                    as: 'userInfo'
-                }
+                    as: 'userInfo',
+                },
             },
             {
-                $unwind: '$userInfo'
+                $unwind: '$userInfo',
             },
             {
                 $group: {
-                    _id: '$userId', // تجميع الطلبات حسب userId
-                    requests: {
-                        $push: {
-                            _id: '$_id',
-                            address: '$address',
-                            scrapType: '$scrapType',
-                            images: '$images',
-                            status: '$status',
-                            createdAt: '$createdAt',
-                            userName: { $first: '$userInfo.name' }, // جلب اسم المستخدم
-                            userEmail: { $first: '$userInfo.email' } // جلب البريد الإلكتروني للمستخدم
-                        }
+                    _id: {
+                        id: '$userInfo._id',
+                        name: '$userInfo.name',
+                        email: '$userInfo.email',
+                        role: '$userInfo.role',
+                        profileImage: '$userInfo.profileImage',
                     },
-                }
+                    requests: { $push: '$$ROOT' },
+                },
             },
             {
                 $project: {
-                    _id: 0,
-                    userId: '$_id',
+                    user: {
+                        id: '$_id.id',
+                        name: '$_id.name',
+                        email: '$_id.email',
+                        role: '$_id.role',
+                        profileImage: '$_id.profileImage',
+                    },
                     requests: 1,
-                }
-            }
+                    _id: 0,
+                },
+            },
         ]);
 
-        // إرسال الطلبات للمستخدم
-        res.status(200).json(requests);
+        // تحديث رابط الصورة الكاملة لصورة البروفايل
+        requests.forEach(request => {
+            const profileImage = request.user.profileImage;
+            request.user.profileImage = profileImage ? `${req.protocol}://${req.get('host')}/${profileImage.replace(/\\/g, '/')}` : null;
+
+            // تحديث روابط الصور الخاصة بالطلب
+            request.requests.forEach(reqItem => { // تغيير اسم المتغير هنا
+                reqItem.images = reqItem.images.map(image => {
+                    return `${req.protocol}://${req.get('host')}/${image.replace(/\\/g, '/')}`;
+                });
+            });
+        });
+
+        res.status(200).json(requests); // إرسال الطلبات كاستجابة
     } catch (error) {
-        res.status(500).json({ message: 'فشل في استرجاع الطلبات', error: error.message });
+        console.error(error);
+        res.status(500).json({ message: 'حدث خطأ أثناء جلب الطلبات', error: error.message });
     }
 };
 
+
+// دالة لحذف طلب معين باستخدام ID
+exports.deleteRequestById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const deletedRequest = await Request.findByIdAndDelete(id);
+
+        if (!deletedRequest) {
+            return res.status(404).json({ message: 'الطلب غير موجود' });
+        }
+
+        res.status(200).json({ message: 'تم حذف الطلب بنجاح' });
+    } catch (error) {
+        res.status(500).json({ message: 'حدث خطأ أثناء الحذف', error });
+    }
+};

@@ -1,9 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const requestController = require('../controllers/requestController');
-const { verifyToken, checkRole } = require('../middleware/authMiddleware');
-const upload = require('../config/multerConfig');
 
+router.post(
+    '/create',
+    requestController.createRequest
+);
+
+// مسار للحصول على الطلبات مجمعة بحسب المستخدم
+router.get('/grouped', requestController.getRequestsGroupedByUser);
+
+router.get('/:id', requestController.getUserRequests);
+
+router.put(
+    '/update-status',
+    requestController.updateRequestStatus
+);
+
+// مسار لحذف طلب معين بناءً على الـ ID
+router.delete('/:id', requestController.deleteRequestById);
+
+module.exports = router;
 // 1. إنشاء طلب جديد(/api/requests)
 // الطريقة: POST
 // الرابط: http://localhost:5000/api/requests
@@ -18,7 +35,7 @@ const upload = require('../config/multerConfig');
 // address: عنوان الطلب(نوع نص)
 // scrapType: نوع الخردة(نوع نص)
 // images: أضف صورًا(نوع ملف، يمكنك إضافة أكثر من ملف)
-// response : 
+// response :
 // {
 //     "message": "طلب جديد تم إنشاؤه بنجاح",
 //         "request": {
@@ -37,13 +54,10 @@ const upload = require('../config/multerConfig');
 //                                 "createdAt": "2024-10-14T16:48:43.448Z"
 //     }
 // }
-router.post(
-    '/create',
-    requestController.createRequest
-);
+
 // الحصول على كل الطلبات الموافقة لمستخدم معين :
 // http://localhost:5000/api/requests/670d38e2b64873138fc32835
-// response : 
+// response :
 // [
 //     {
 //         "_id": "670d4b5708341966c06f3e60",
@@ -56,16 +70,15 @@ router.post(
 //         "createdAt": "2024-10-14T16:48:23.737Z"
 //     },
 //     {
-router.get('/:id', requestController.getUserRequests);
 
 
 // تحديث حالة الطلب (يتطلب مصادقة + صلاحية المسؤول)
 // http://localhost:5000/api/requests/update-status
 // {
 // "requestId": "670d4b5708341966c06f3e60",
-//     "status": "completed"  
+//     "status": "completed"
 // }
-// response : 
+// response :
 // {
 //     "message": "تم تحديث حالة الطلب بنجاح",
 //         "request": {
@@ -79,12 +92,3 @@ router.get('/:id', requestController.getUserRequests);
 //                             "createdAt": "2024-10-14T16:48:23.737Z"
 //     }
 // }
-router.put(
-    '/update-status',
-    requestController.updateRequestStatus
-);
-
-// استرجاع جميع الطلبات في النظام )
-router.get('/all-req', requestController.getAllRequests);
-
-module.exports = router;

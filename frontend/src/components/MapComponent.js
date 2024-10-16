@@ -1,28 +1,47 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const MapComponent = ({ position, setPosition }) => {
+    const mapRef = useRef(null);
+    const markerRef = useRef(null);
+
     useEffect(() => {
-        const map = L.map('map').setView(position, 13); // تحديد الإحداثيات الافتراضية
+        // إنشاء الخريطة مرة واحدة فقط عند تحميل المكون
+        mapRef.current = L.map('map').setView(position, 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        }).addTo(mapRef.current);
 
-        const marker = L.marker(position).addTo(map); // إضافة علامة للموقع
+        // إعداد العلامة وجعلها قابلة للسحب
+        markerRef.current = L.marker(position, { draggable: true }).addTo(mapRef.current);
 
-        // حدث النقر لتحديث الموقع
-        map.on('click', (e) => {
+        // تحديث الإحداثيات عند سحب العلامة
+        markerRef.current.on('dragend', () => {
+            const { lat, lng } = markerRef.current.getLatLng();
+            setPosition([lat, lng]);
+        });
+
+        // تحديث الإحداثيات عند النقر على الخريطة
+        mapRef.current.on('click', (e) => {
             const { lat, lng } = e.latlng;
-            setPosition([lat, lng]); // تحديث الإحداثيات
-            marker.setLatLng([lat, lng]); // تحديث موقع العلامة
+            setPosition([lat, lng]);
+            markerRef.current.setLatLng([lat, lng]);
         });
 
         return () => {
-            map.remove(); // تنظيف الخريطة عند تفكيك المكون
+            mapRef.current.remove();
         };
-    }, [position, setPosition]);
+    }, [setPosition, position]);
+
+    useEffect(() => {
+        if (mapRef.current && markerRef.current) {
+            // تحديث العرض وموقع العلامة عند تغيير الموقع
+            mapRef.current.setView(position, mapRef.current.getZoom());
+            markerRef.current.setLatLng(position);
+        }
+    }, [position]);
 
     return <div id="map" style={{ height: '400px', width: '100%' }}></div>;
 };
