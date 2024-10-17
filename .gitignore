@@ -8,7 +8,6 @@ scripts/
 build/
 dist/
 out/
-
 # Environment variables
 .env
 .env.local
@@ -39,3 +38,5 @@ coverage/
 
 # Test directories
 __tests__/
+
+uploads/
