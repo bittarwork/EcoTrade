@@ -168,7 +168,7 @@ const AdminAuction = () => {
         </div>
     );
     return (
-        <div className="p-6 bg-gray-50">
+        <div className="">
             <h1 className="text-4xl font-bold mb-6 text-center text-gray-800">إدارة المزادات</h1>
             <AuctionStatitics auctions={auctions}></AuctionStatitics>
             <div className="flex justify-between mb-4">
