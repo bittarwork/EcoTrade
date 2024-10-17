@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Slider from 'react-slick';
 import AuctionPopup from '../../models/AuctionPopup';
-
-
+import { Link } from 'react-router-dom';
+import AuctionStatitics from '../../components/AuctionStatitics';
 const AdminAuction = () => {
     const [auctions, setAuctions] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -121,32 +121,16 @@ const AdminAuction = () => {
         dots: true,
         infinite: true,
         speed: 500,
-        fade: true,
         slidesToShow: 1,
         slidesToScroll: 1,
         autoplay: true,
         autoplaySpeed: 3000,
-        responsive: [
-            {
-                breakpoint: 768,
-                settings: {
-                    slidesToShow: 1,
-                    slidesToScroll: 1,
-                }
-            },
-            {
-                breakpoint: 1024,
-                settings: {
-                    slidesToShow: 2,
-                    slidesToScroll: 1,
-                }
-            }
-        ]
     };
+
 
     const AuctionCard = ({ auction, onCancel, onClose, onDelete }) => (
         <div className={`border p-4 rounded-lg shadow-lg transition-all duration-300 
-                    ${auction.status === 'canceled' ? 'bg-red-100' : auction.status === 'closed' ? 'bg-gray-100' : 'bg-white hover:shadow-xl'}`}>
+                ${auction.status === 'canceled' ? 'bg-red-100' : auction.status === 'closed' ? 'bg-gray-100' : 'bg-white hover:shadow-xl'}`} dir='rtl' >
             <div className='mb-5'>
                 <Slider {...settings}>
                     {auction.images.map((image, index) => (
@@ -165,7 +149,8 @@ const AdminAuction = () => {
             <p className={`text-sm font-semibold ${auction.status === 'canceled' ? 'text-red-600' : auction.status === 'closed' ? 'text-gray-600' : 'text-green-600'}`}>
                 الحالة: {auction.status === 'canceled' ? 'ملغى' : auction.status === 'closed' ? 'مغلق' : 'نشط'}
             </p>
-            <div className="flex space-x-2 mt-2">
+            <div className='h-0.5 w-full bg-black bg-opacity-10 mt-2'></div>
+            <div className="flex justify-between mt-4">
                 <button className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition duration-200" onClick={() => onCancel(auction._id)}>
                     إلغاء المزاد
                 </button>
@@ -176,12 +161,16 @@ const AdminAuction = () => {
                     حذف المزاد
                 </button>
             </div>
+            {/* زر الانتقال إلى تفاصيل المزاد */}
+            <Link to={`/auction-room-admin/${auction._id}`} className="block mt-4 p-2 text-center bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200 w-full">
+                عرض تفاصيل المزاد
+            </Link>
         </div>
     );
     return (
         <div className="p-6 bg-gray-50">
             <h1 className="text-4xl font-bold mb-6 text-center text-gray-800">إدارة المزادات</h1>
-
+            <AuctionStatitics auctions={auctions}></AuctionStatitics>
             <div className="flex justify-between mb-4">
                 <div className="flex-grow mr-2">
                     <input

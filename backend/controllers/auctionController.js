@@ -1,5 +1,4 @@
 const Auction = require('../models/auctionModel');
-const User = require('../models/userModel');
 const upload = require('../config/multerConfig'); // استيراد إعداد multer
 
 const createAuction = async (req, res) => {
@@ -156,33 +155,51 @@ const getCurrentBids = async (req, res) => {
 // دالة لتحديث عرض المزايدة الحالي
 const updateBid = async (req, res) => {
     try {
-        const { auctionId, newBidAmount } = req.body;
+        const { auctionId, bidderId, percentageIncrease } = req.body;
 
-        // تحقق من وجود المزاد
+        // التحقق من إرسال جميع البيانات المطلوبة
+        if (!auctionId || !bidderId || !percentageIncrease) {
+            return res.status(400).json({ error: 'All fields (auctionId, bidderId, percentageIncrease) are required' });
+        }
+
+        // التأكد من وجود المزاد واسترداد المزاد من قاعدة البيانات
         const auction = await Auction.findById(auctionId);
         if (!auction) {
-            return res.status(404).json({ message: 'Auction not found' });
+            return res.status(404).json({ error: 'Auction not found' });
         }
 
-        // تحقق من أن المزايد الحالي هو المستخدم
-        if (!auction.currentBidder.equals(req.user._id)) {
-            return res.status(403).json({ message: 'You are not the current bidder' });
+        // التحقق مما إذا كان المزاد مفتوحاً
+        if (auction.status !== 'open') {
+            return res.status(400).json({ error: 'Auction is not open for bidding' });
         }
 
-        // تحقق من صحة العرض
-        if (newBidAmount <= auction.currentBid) {
-            return res.status(400).json({ message: 'New bid must be higher than current bid' });
-        }
+        // تحديد القيمة الأساسية لحساب الزيادة: إذا كان currentBid صفر، سنبدأ بـ startPrice
+        const baseBid = auction.currentBid === 0 ? auction.startPrice : auction.currentBid;
 
-        // تحديث المزاد
+        // حساب القيمة الجديدة بناءً على نسبة الزيادة
+        const increaseAmount = baseBid * (percentageIncrease / 100);
+        const newBidAmount = baseBid + increaseAmount;
+
+        // تحديث حقل currentBid والمزايد الحالي
         auction.currentBid = newBidAmount;
+        auction.currentBidder = bidderId;
+
+        // إضافة السجل إلى قائمة المزايدات
+        auction.bids.push({
+            bidder: bidderId,  // بدلاً من mongoose.Types.ObjectId
+            bidAmount: newBidAmount,
+        });
+
+        // حفظ التغييرات
         await auction.save();
 
-        return res.status(200).json(auction);
+        res.status(200).json({ message: 'Bid updated successfully', auction });
     } catch (error) {
-        return res.status(500).json({ message: 'Server error', error });
+        console.error(error);
+        res.status(500).json({ error: 'An error occurred while updating the bid' });
     }
 };
+
 
 // دالة لاسترجاع أعلى المزايدين لمزاد معين
 const getTopBidders = async (req, res) => {

@@ -54,7 +54,7 @@ router.post('/login', userController.loginUser);
 //                             "role": "user"
 //     }
 // }
-router.get('/profile/:userId', verifyToken, userController.getUser);
+router.get('/profile/:userId', userController.getUser);
 
 // مسار تحديث معلومات المستخدم
 // مسار الحصول على معلومات المستخدم

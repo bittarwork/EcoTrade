@@ -159,12 +159,15 @@ exports.getUser = async (req, res) => {
             return res.status(404).json({ message: 'المستخدم غير موجود' });
         }
 
+        // الحصول على عنوان السيرفر
+        const serverUrl = `${req.protocol}://${req.get('host')}/`;
+
         res.json({
             user: {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                profileImage: user.profileImage, // إضافة مسار الصورة
+                profileImage: serverUrl + user.profileImage, // دمج عنوان السيرفر مع مسار الصورة
                 createdAt: user.createdAt,
                 updatedAt: user.updatedAt,
                 role: user.role // إضافة الدور الخاص بالمستخدم
@@ -174,6 +177,7 @@ exports.getUser = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 // دالة حذف المستخدم
 exports.deleteUser = async (req, res) => {

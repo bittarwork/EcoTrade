@@ -10,6 +10,7 @@ import DevelopersPage from './pages/DevelopersPage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import AuctionRoom from './pages/auction/AuctionRoom';
+import AdminAuctionRoom from './pages/admin/AdminAuctionRoom';
 import { UserProvider } from './context/UserContext';
 import Termofuse from "./pages/Termofuse";
 import Privacypolicy from './pages/Privacypolicy';
@@ -30,7 +31,9 @@ const App = () => {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/terms-of-service" element={<Termofuse />} />
             <Route path="/privacy-policy" element={<Privacypolicy />} />
-            <Route path="/auction-room/:auctionId" element={<AuctionRoom />} /> {/* مسار غرفة المزاد */}
+            <Route path="/auction-room/:auctionId" element={<AuctionRoom />} />
+            <Route path="/auction-room-admin/:auctionId" element={<AdminAuctionRoom />} />
+
           </Routes>
         </Layout>
       </Router>

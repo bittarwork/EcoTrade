@@ -149,7 +149,9 @@ const UserAuction = () => {
 
 
             {sortedAuctions.length === 0 ? (
-                <div className="text-center">No auctions available.</div>
+                <div className="text-center text-gray-500 p-4 border border-gray-300 rounded-lg">
+                    <p>لا توجد مزادات متاحة حالياً.</p>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {sortedAuctions.map(auction => (
@@ -172,7 +174,7 @@ const UserAuction = () => {
                             <p className="text-gray-700 mb-2">{auction.description}</p>
                             <p className="mb-1"><strong>الفئة:</strong> {auction.category}</p>
                             <p className="mb-1"><strong>سعر البداية:</strong> {auction.startPrice} ل.س</p>
-                            <p className="mb-1"><strong>العطاء الحالي:</strong> {auction.currentBid} ل.س</p>
+                            <p className="mb-1"><strong>القيمة الحالية:</strong> {auction.currentBid} ل.س</p>
                             <p className="mb-2"><strong>تاريخ انتهاء المزاد:</strong> {new Date(auction.endDate).toLocaleString()}</p>
                             <p className={`text-sm font-semibold ${auction.status === 'canceled' ? 'text-red-600' : auction.status === 'closed' ? 'text-gray-600' : 'text-green-600'}`}>
                                 الحالة: {auction.status === 'canceled' ? 'ملغى' : auction.status === 'closed' ? 'مغلق' : 'نشط'}

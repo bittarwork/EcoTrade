@@ -27,28 +27,28 @@
 
     connectDB();
 
-    app.use((req, res, next) => {
-        const start = Date.now();
+    // app.use((req, res, next) => {
+    //     const start = Date.now();
 
-        const originalSend = res.send;
-        res.send = function (body) {
-            const responseTime = Date.now() - start;
+    //     const originalSend = res.send;
+    //     res.send = function (body) {
+    //         const responseTime = Date.now() - start;
 
-            console.log(chalk.bgBlue.bold(`\n===== New Request =====`));
-            console.log(chalk.blue(`URL: `) + chalk.cyan(`${req.method} ${req.originalUrl}`));
-            console.log(chalk.blue(`Headers: `) + chalk.gray(JSON.stringify(req.headers).slice(0, 50) + '...'));
-            console.log(chalk.blue(`Body: `) + chalk.gray(JSON.stringify(req.body).slice(0, 50) + '...'));
-            console.log(chalk.yellow.bold(`--- Response ---`));
-            console.log(chalk.yellow(`Status: `) + chalk.green.bold(res.statusCode));
-            console.log(chalk.yellow(`Response Time: `) + chalk.green(`${responseTime} ms`));
-            console.log(chalk.yellow(`Body: `) + chalk.gray(typeof body === 'string' ? body.slice(0, 50) + '...' : ''));
-            console.log(chalk.bgBlue.bold(`=========================\n`));
+    //         console.log(chalk.bgBlue.bold(`\n===== New Request =====`));
+    //         console.log(chalk.blue(`URL: `) + chalk.cyan(`${req.method} ${req.originalUrl}`));
+    //         console.log(chalk.blue(`Headers: `) + chalk.gray(JSON.stringify(req.headers).slice(0, 50) + '...'));
+    //         console.log(chalk.blue(`Body: `) + chalk.gray(JSON.stringify(req.body).slice(0, 50) + '...'));
+    //         console.log(chalk.yellow.bold(`--- Response ---`));
+    //         console.log(chalk.yellow(`Status: `) + chalk.green.bold(res.statusCode));
+    //         console.log(chalk.yellow(`Response Time: `) + chalk.green(`${responseTime} ms`));
+    //         console.log(chalk.yellow(`Body: `) + chalk.gray(typeof body === 'string' ? body.slice(0, 50) + '...' : ''));
+    //         console.log(chalk.bgBlue.bold(`=========================\n`));
 
-            originalSend.apply(res, arguments);
-        };
+    //         originalSend.apply(res, arguments);
+    //     };
 
-        next();
-    });
+    //     next();
+    // });
 
     app.use('/api/users', userRoutes);
     app.use('/api/requests', requestRoutes);

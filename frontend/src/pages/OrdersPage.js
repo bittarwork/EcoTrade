@@ -173,7 +173,7 @@ const OrdersPage = () => {
 
             {user ? (
 
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div className="p-6 mb-6">
                     {user && user.role === 'admin' ? (
                         <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">عرض كامل الطلبات المتلقاة الى الموقع</h1>
                     ) : (
@@ -224,13 +224,17 @@ const OrdersPage = () => {
                                 onCancelRequest={cancelRequest} // تمرير دالة الإلغاء
                             />
                         ) : (
-                            <p className="text-gray-500">لا توجد طلبات.</p>
+                            <div className="text-center text-gray-500 p-4 border border-gray-300 rounded-lg">
+                                <p>لا توجد طلبات متاحة حالياً.</p>
+                            </div>
                         )
                     ) : (
                         filteredRequests.length > 0 ? (
                             <RequestsList requests={filteredRequests} onUpdateStatus={updateRequestStatus} userRole={user.role} />
                         ) : (
-                            <p className="text-gray-500">لا توجد طلبات مطابقة.</p>
+                            <div className="text-center text-gray-500 p-4 border border-gray-300 rounded-lg">
+                                <p>لا توجد مزادات متاحة حالياً.</p>
+                            </div>
                         )
                     )}
 
