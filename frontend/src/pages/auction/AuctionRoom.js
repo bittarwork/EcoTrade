@@ -7,6 +7,7 @@ const AuctionRoom = () => {
     const [auctionDetails, setAuctionDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [remainingTime, setRemainingTime] = useState(null);
 
     useEffect(() => {
         const fetchAuctionDetails = async () => {
@@ -17,11 +18,33 @@ const AuctionRoom = () => {
                 }
                 const data = await response.json();
                 setAuctionDetails(data);
+                // حساب الوقت المتبقي لانتهاء المزاد
+                calculateRemainingTime(data.endDate);
             } catch (err) {
                 setError(err.message);
             } finally {
                 setLoading(false);
             }
+        };
+
+        const calculateRemainingTime = (endDate) => {
+            const end = new Date(endDate).getTime();
+            const updateTimer = () => {
+                const now = new Date().getTime();
+                const distance = end - now;
+
+                if (distance < 0) {
+                    setRemainingTime("انتهى المزاد");
+                } else {
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    setRemainingTime(`${hours}س ${minutes}د ${seconds}ث`);
+                }
+            };
+            updateTimer();
+            const interval = setInterval(updateTimer, 1000);
+            return () => clearInterval(interval);
         };
 
         fetchAuctionDetails();
@@ -57,6 +80,7 @@ const AuctionRoom = () => {
                         <p className="mb-1"><strong>سعر البداية:</strong> {auctionDetails.startPrice} ل.س</p>
                         <p className="mb-1"><strong>العطاء الحالي:</strong> {auctionDetails.currentBid} ل.س</p>
                         <p className="mb-2"><strong>تاريخ انتهاء المزاد:</strong> {new Date(auctionDetails.endDate).toLocaleString()}</p>
+                        <p className="mb-2"><strong>الوقت المتبقي:</strong> {remainingTime}</p>
                         <p className={`text-sm font-semibold ${auctionDetails.status === 'canceled' ? 'text-red-600' : auctionDetails.status === 'closed' ? 'text-gray-600' : 'text-green-600'}`}>
                             الحالة: {auctionDetails.status === 'canceled' ? 'ملغى' : auctionDetails.status === 'closed' ? 'مغلق' : 'نشط'}
                         </p>
@@ -64,9 +88,9 @@ const AuctionRoom = () => {
                 </div>
 
                 {/* عمود العمليات في غرفة المزايدة */}
-                <div className="flex-none  w-1/2 border p-4 rounded-lg shadow-lg flex flex-col justify-between">
+                <div className="flex-none w-1/2 border p-4 rounded-lg shadow-lg flex flex-col justify-between">
                     <div className="mb-4 text-center">
-                        <h2 className="text-xl font-semibold">باتي قريبا</h2>
+                        <h2 className="text-xl font-semibold">الخيارات المتاحة</h2>
                     </div>
 
                     {/* قسم الزرار ليكون في الأسفل دائمًا */}
@@ -77,8 +101,11 @@ const AuctionRoom = () => {
                         <button className="bg-gray-300 text-gray-700 px-4 py-2 rounded w-full mb-2 hover:bg-gray-400 transition duration-200">
                             عرض المزايدات السابقة
                         </button>
-                        <button className="bg-red-500 text-white px-4 py-2 rounded w-full hover:bg-red-700 transition duration-200">
+                        <button className="bg-red-500 text-white px-4 py-2 rounded w-full mb-2 hover:bg-red-700 transition duration-200">
                             إنهاء المزاد
+                        </button>
+                        <button onClick={() => window.location.reload()} className="bg-green-500 text-white px-4 py-2 rounded w-full hover:bg-green-700 transition duration-200">
+                            تحديث الصفحة
                         </button>
                     </div>
                 </div>

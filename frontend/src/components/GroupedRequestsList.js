@@ -73,10 +73,9 @@ const GroupedRequestsList = ({ groupedRequests, onUpdateStatus, onDeleteRequest,
             </div>
 
             <div className='h-0.5 min-w-full bg-gray-300 mb-4'></div>
-
+            <h2 className='text-2xl font-bold text-center mb-2'>الطلبات</h2>
             {groupedRequests.slice(0, visibleRequests).map((group, index) => (
-                <div key={index} className="bg-white border border-gray-200 p-6 rounded-lg shadow-lg transition duration-200 mb-4 hover:shadow-xl">
-                    <h3 className="text-xl text-center font-semibold text-gray-800">الطلبات:</h3>
+                <div key={index} className=" border border-gray-400 p-6 rounded-lg   mb-4 ">
 
                     <div className="flex items-center mb-4">
                         <img

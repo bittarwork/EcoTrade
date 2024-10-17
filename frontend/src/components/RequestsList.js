@@ -1,41 +1,52 @@
 import React from 'react';
+import Slider from 'react-slick';
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
+
+const sliderSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+};
 
 const RequestsList = ({ requests, onUpdateStatus, userRole }) => {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" dir=''>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {requests.map((request) => {
                 const isCompleted = request.status === 'completed';
+                const isCanceled = request.status === 'canceled';
 
                 return (
-                    <div key={request._id} className=" bg-white p-4 rounded-lg shadow-lg transition duration-200 " dir='rtl'>
-                        <div className="flex justify-between items-center">
+                    <div
+                        key={request._id}
+                        dir='rtl'
+                        className={`border p-4 rounded-lg shadow-lg transition-all duration-300 
+                            ${isCanceled ? 'bg-red-100 border-red-300' : isCompleted ? 'bg-gray-100 border-gray-300' : 'bg-white hover:shadow-xl border-gray-300'}`}
+                    >
+                        <div className="mb-5">
+                            <Slider {...sliderSettings}>
+                                {request.images.map((image, index) => (
+                                    <div key={index}>
+                                        <img src={image} alt={`Request ${request._id}`} className="w-full h-48 object-cover mb-2 rounded-lg" />
+                                    </div>
+                                ))}
+                            </Slider>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
                             <h3 className="text-xl font-semibold text-gray-800">{request.address}</h3>
-                            <span className={`text-sm font-semibold py-1 px-2 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>
-                                {request.status}
+                            <span className={`text-sm font-semibold py-1 px-2 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : isCanceled ? 'bg-red-200 text-red-800' : 'bg-yellow-200 text-yellow-800'}`}>
+                                {isCompleted ? 'مكتمل' : isCanceled ? 'ملغى' : 'نشط'}
                             </span>
                         </div>
 
-                        <div className="mt-2">
-                            <h4 className="text-lg font-semibold text-gray-700">تفاصيل الطلب</h4>
-                            <div className="flex flex-col space-y-1 mt-1">
-                                <div className="flex items-center">
-                                    <span className="font-medium text-gray-600 w-1/3">نوع الخردة:</span>
-                                    <span className="text-gray-800">{request.scrapType}</span>
-                                </div>
-                                <div className="flex items-center">
-                                    <span className="font-medium text-gray-600 w-1/3">تاريخ الإنشاء:</span>
-                                    <span className="text-gray-800">{new Date(request.createdAt).toLocaleDateString()}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-4">
-                            <h4 className="text-lg font-semibold text-gray-700">الصور</h4>
-                            <div className="flex flex-wrap space-x-2 mt-2">
-                                {request.images.map((image, index) => (
-                                    <img key={index} src={image} alt={`Request ${request._id}`} className="h-20 w-20 object-cover rounded-lg border border-gray-200 shadow-sm transition-shadow duration-200 hover:shadow-md" />
-                                ))}
-                            </div>
+                        <div className="text-gray-700 mb-4">
+                            <h4 className="text-lg font-semibold">تفاصيل الطلب</h4>
+                            <p><strong>نوع الخردة:</strong> {request.scrapType}</p>
+                            <p><strong>تاريخ الإنشاء:</strong> {new Date(request.createdAt).toLocaleDateString()}</p>
                         </div>
 
                         {userRole === 'admin' && (
