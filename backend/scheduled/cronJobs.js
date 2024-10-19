@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const Auction = require('../models/auctionModel');
-const Request = require('../models/requestModel');  // استيراد مودل الطلبات
-const ScrapItem = require('../models/scrapItem');  // استيراد مودل المواد
+const Request = require('../models/requestModel');
+const ScrapItem = require('../models/scrapItem');
 
 // مهمة مجدولة لإغلاق المزادات التي انتهت صلاحيتها
 cron.schedule('* * * * * *', async () => {

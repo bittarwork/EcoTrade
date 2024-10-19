@@ -1,16 +1,15 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
-dotenv.config(); // تحميل المتغيرات من .env
+dotenv.config();
 
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI, {
-        });
-        console.log('Connected to MongoDB');
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log(`✅  Successfully connected to MongoDB at ${process.env.MONGODB_URI}`);
     } catch (error) {
-        console.error('Could not connect to MongoDB:', error);
-        process.exit(1); // إنهاء العملية في حالة فشل الاتصال
+        console.error(`❌  Error connecting to MongoDB: ${error.message}`);
+        process.exit(1);
     }
 };
 
