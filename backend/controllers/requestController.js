@@ -2,11 +2,9 @@ const Request = require('../models/requestModel');
 const User = require('../models/userModel');
 const upload = require('../config/multerConfig');
 
-// دالة مساعدة لتكوين مسارات الصور الكاملة
-// دالة لبناء المسار الكامل للصور
+
 const getFullImagePath = (images, req) => {
     return images.map(image => {
-        // إذا كان المسار يبدأ بـ "uploads/"، لا تضف البروتوكول والنطاق مرة أخرى
         return image.startsWith('uploads/')
             ? `${req.protocol}://${req.get('host')}/${image}`
             : image; // إذا كان الرابط كاملاً، اتركه كما هو

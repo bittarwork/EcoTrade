@@ -17,15 +17,15 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: ['user', 'admin'],
-        default: 'user', // جميع المستخدمين الجدد هم من النوع العادي بشكل افتراضي
+        default: 'user',
     },
     createdAt: {
         type: Date,
         default: Date.now,
     },
-    profileImage: { // إضافة حقل صورة الملف الشخصي
+    profileImage: {
         type: String,
-        default: null, // القيمة الافتراضية للحقل
+        default: null,
     },
 });
 

@@ -15,7 +15,7 @@ const requestSchema = new mongoose.Schema({
         required: true,
     },
     images: [{
-        type: String, // روابط الصور
+        type: String,
         required: true,
     }],
     status: {

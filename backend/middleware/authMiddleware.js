@@ -1,30 +1,40 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/userModel'); // تأكد من أن المسار صحيح
 
-// ميدل وير للتحقق من صحة التوكن
+// دالة للتحقق من الـ JWT
 exports.verifyToken = (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1]; // استخراج التوكن من الهيدر
+    const token = req.header('Authorization')?.split(' ')[1]; // استخراج التوكن من الهيدر
 
     if (!token) {
-        return res.status(403).json({ message: 'ليس لديك إذن للوصول' });
+        return res.status(401).json({ message: 'لا يوجد توكن. الوصول غير مصرح.' });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).json({ message: 'التوكن غير صالح أو منتهي' });
-        }
-        // إضافة المعلومات المستخرجة من التوكن إلى الطلب
-        req.user = {
-            id: decoded.id,
-            role: decoded.role
-        };
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // تحقق من التوكن باستخدام السر
+        req.user = decoded; // إضافة بيانات المستخدم إلى الطلب بعد فك التوكن
         next();
-    });
+    } catch (error) {
+        res.status(401).json({ message: 'توكن غير صالح أو منتهي الصلاحية.' });
+    }
 };
 
-// ميدل وير للتحقق من الأدوار
-exports.checkRole = (roles) => (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-        return res.status(403).json({ message: 'ليس لديك إذن للوصول إلى هذه الموارد' });
-    }
-    next();
+// دالة للتحقق من صلاحية الدور
+exports.checkRole = (roles) => {
+    return async (req, res, next) => {
+        try {
+            const user = await User.findById(req.user.id); // استرجاع المستخدم بناءً على الـ JWT
+
+            if (!user) {
+                return res.status(404).json({ message: 'المستخدم غير موجود.' });
+            }
+
+            if (!roles.includes(user.role)) {
+                return res.status(403).json({ message: 'ليس لديك صلاحية للوصول إلى هذا المورد.' });
+            }
+
+            next();
+        } catch (error) {
+            res.status(500).json({ message: 'خطأ في التحقق من الدور.', error: error.message });
+        }
+    };
 };
