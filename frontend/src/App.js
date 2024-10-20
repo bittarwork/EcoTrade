@@ -14,6 +14,7 @@ import AdminAuctionRoom from './pages/admin/AdminAuctionRoom';
 import { UserProvider } from './context/UserContext';
 import Termofuse from "./pages/Termofuse";
 import Privacypolicy from './pages/Privacypolicy';
+import UserAdmin from './pages/admin/UserAdmin';
 import './index.css';
 
 const App = () => {
@@ -23,6 +24,7 @@ const App = () => {
         <Layout>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/Users" element={<UserAdmin />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/auctions" element={<AuctionsPage />} />
             <Route path="/contact" element={<ContactPage />} />
@@ -33,7 +35,6 @@ const App = () => {
             <Route path="/privacy-policy" element={<Privacypolicy />} />
             <Route path="/auction-room/:auctionId" element={<AuctionRoom />} />
             <Route path="/auction-room-admin/:auctionId" element={<AdminAuctionRoom />} />
-
           </Routes>
         </Layout>
       </Router>

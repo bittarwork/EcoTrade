@@ -33,7 +33,9 @@ const Header = () => {
                     <Link to="/" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">الصفحة الرئيسية</Link>
                     <Link to="/orders" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">صفحة الطلبات</Link>
                     <Link to="/auctions" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">صفحة المزادات</Link>
+                    {user ? user.role === "admin" ? (<Link to="/users" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">ادارة المستخدمين</Link>) : "" : ""}
                 </div>
+
 
                 {/* الأزرار على اليمين */}
                 <div className="hidden md:flex items-center space-x-4">
