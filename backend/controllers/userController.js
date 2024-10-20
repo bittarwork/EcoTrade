@@ -17,7 +17,7 @@ exports.registerUser = [
                 return res.status(400).json({ errors: errors.array() });
             }
 
-            const { name, email, password } = req.body;
+            const { name, email, password, role } = req.body; // إضافة 'role' هنا
             const profileImage = req.file ? req.file.path : null;
             const existingUser = await User.findOne({ email });
             if (existingUser) {
@@ -30,7 +30,8 @@ exports.registerUser = [
                 name,
                 email,
                 password: hashedPassword,
-                profileImage
+                profileImage,
+                role // إضافة الدور هنا
             });
 
             await newUser.save();
@@ -40,7 +41,7 @@ exports.registerUser = [
                 email: newUser.email,
                 profileImage: newUser.profileImage,
                 createdAt: newUser.createdAt,
-                role: newUser.role
+                role: newUser.role // تأكد من تضمين الدور في الاستجابة
             };
 
             res.status(201).json({ message: 'تم تسجيل المستخدم بنجاح', user: responseUser });
@@ -49,6 +50,7 @@ exports.registerUser = [
         }
     }
 ];
+
 exports.getAllUsers = async (req, res) => {
     try {
         const users = await User.find({}, 'name email profileImage createdAt role');
@@ -112,12 +114,13 @@ exports.updateUser = [
     async (req, res) => {
         try {
             const { userId } = req.params;
-            const { name, email, password } = req.body;
+            const { name, email, password, role } = req.body;
 
             const updatedData = {
                 name,
                 email,
-                profileImage: req.file ? req.file.path : undefined
+                profileImage: req.file ? req.file.path : undefined,
+                role
             };
 
             if (password) {
@@ -125,7 +128,6 @@ exports.updateUser = [
             }
 
             const updatedUser = await User.findByIdAndUpdate(userId, updatedData, { new: true });
-
 
             if (!updatedUser) {
                 return res.status(404).json({ message: 'المستخدم غير موجود' });
@@ -138,6 +140,7 @@ exports.updateUser = [
                     name: updatedUser.name,
                     email: updatedUser.email,
                     profileImage: updatedUser.profileImage,
+                    role: updatedUser.role, // تضمين الدور في الاستجابة
                     createdAt: updatedUser.createdAt,
                     updatedAt: updatedUser.updatedAt
                 }
@@ -147,6 +150,7 @@ exports.updateUser = [
         }
     }
 ];
+
 
 exports.getUser = async (req, res) => {
     try {

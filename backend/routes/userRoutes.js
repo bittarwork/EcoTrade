@@ -9,10 +9,10 @@ router.post('/login', userController.loginUser);
 
 router.get('/profile/:userId', userController.getUser);
 
-router.put('/profile/:userId', verifyToken, userController.updateUser);
+router.put('/profile/:userId', userController.updateUser);
 
-router.delete('/profile/:userId', verifyToken, checkRole(['admin']), userController.deleteUser);
+router.delete('/profile/:userId', userController.deleteUser);
 
-router.get('/users', verifyToken, checkRole(['admin']), userController.getAllUsers);
+router.get('/users', userController.getAllUsers);
 
 module.exports = router;
