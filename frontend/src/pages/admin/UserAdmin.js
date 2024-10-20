@@ -9,6 +9,7 @@ const UserAdmin = () => {
     const [error, setError] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [userToEdit, setUserToEdit] = useState(null);
+    const [searchTerm, setSearchTerm] = useState(''); // حالة البحث
 
     const REACT_APP_API_URL = process.env.REACT_APP_API_URL;
 
@@ -61,6 +62,11 @@ const UserAdmin = () => {
         setUserToEdit(null); // إعادة تعيين المستخدم المعدل
     };
 
+    const filteredUsers = users.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    ); // تصفية المستخدمين بناءً على مصطلح البحث
+
     if (loading) {
         return <p>جاري تحميل المستخدمين...</p>;
     }
@@ -70,17 +76,26 @@ const UserAdmin = () => {
     }
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="p-6 bg-gray-50 min-h-screen" dir='rtl'>
             {user && user.role === "admin" ? (
                 <>
                     <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">إدارة المستخدمين</h1>
 
-                    <button
-                        onClick={() => setShowForm(true)}
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-6"
-                    >
-                        إضافة مستخدم جديد
-                    </button>
+                    <div className="flex justify-between mb-6">
+                        <input
+                            type="text"
+                            placeholder="ابحث عن مستخدم..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="border border-gray-300 rounded px-4 py-2 w-1/3"
+                        />
+                        <button
+                            onClick={() => setShowForm(true)}
+                            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                        >
+                            إضافة مستخدم جديد
+                        </button>
+                    </div>
 
                     <AddUserPopup
                         isOpen={showForm}
@@ -89,7 +104,7 @@ const UserAdmin = () => {
                         userToEdit={userToEdit}
                     />
 
-                    {users.length === 0 ? (
+                    {filteredUsers.length === 0 ? (
                         <p className="text-red-500 text-center">لا يوجد مستخدمين لعرضهم.</p>
                     ) : (
                         <div className="overflow-x-auto shadow-md rounded-lg">
@@ -105,7 +120,7 @@ const UserAdmin = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {users.map(user => (
+                                    {filteredUsers.map(user => (
                                         <tr key={user.id} className="hover:bg-gray-100 transition duration-300">
                                             <td className="border border-gray-300 px-4 py-2 text-center">
                                                 {user.profileImage ? (
