@@ -1,5 +1,4 @@
 const ScrapItem = require('../models/scrapItem');
-
 const createScrapItem = async (req, res) => {
     try {
         // التحقق من أن الصور تم رفعها
@@ -30,7 +29,7 @@ const createScrapItem = async (req, res) => {
             barcode,
             estimatedPrice,
             source,
-            images: req.files.map(file => `${process.env.BASE_URL}/${file.path}`), // استخدام متغير بيئي
+            images: req.files.map(file => `${process.env.BASE_URL}/${file.path.replace(/\\/g, '/')}`), // استخدام متغير بيئي مع معالجة المسار
         };
 
         // حفظ العنصر في قاعدة البيانات
@@ -53,26 +52,45 @@ const createScrapItem = async (req, res) => {
 };
 
 
+
 // 2. الحصول على جميع العناصر
 const getAllScrapItems = async (req, res) => {
     try {
         const scrapItems = await ScrapItem.find();
-        res.status(200).json(scrapItems);
+
+        // إعداد الروابط بشكل صحيح لكل عنصر
+        const formattedScrapItems = scrapItems.map(item => ({
+            ...item.toObject(), // تحويل الكائن إلى شكل قابل للإرسال
+            images: item.images.map(image => `${image.replace(/\\/g, '/')}`), // معالجة المسار
+        }));
+
+        res.status(200).json(formattedScrapItems);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
+
+
 
 // 3. الحصول على عنصر حسب المعرف
 const getScrapItemById = async (req, res) => {
     try {
         const scrapItem = await ScrapItem.findById(req.params.id);
         if (!scrapItem) return res.status(404).json({ message: 'Item not found' });
-        res.status(200).json(scrapItem);
+
+        // إعداد الرابط الخاص بالصور بشكل صحيح
+        const formattedItem = {
+            ...scrapItem.toObject(), // تحويل الكائن إلى شكل قابل للإرسال
+            images: scrapItem.images.map(image => `${image.replace(/\\/g, '/')}`), // معالجة المسار
+        };
+
+        res.status(200).json(formattedItem);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
+
+
 
 // 4. تحديث عنصر حسب المعرف
 const updateScrapItem = async (req, res) => {
@@ -86,7 +104,7 @@ const updateScrapItem = async (req, res) => {
         // إذا تم رفع صور جديدة
         let images = [];
         if (req.files && req.files.length > 0) {
-            images = req.files.map(file => `${process.env.BASE_URL}/${file.path}`); // استخدام متغير بيئي
+            images = req.files.map(file => `${process.env.BASE_URL}/${file.path.replace(/\\/g, '/')}`); // استخدام متغير بيئي مع معالجة المسار
         }
 
         // تحديث البيانات
@@ -100,7 +118,7 @@ const updateScrapItem = async (req, res) => {
             barcode: req.body.barcode || scrapItem.barcode,
             estimatedPrice: req.body.estimatedPrice || scrapItem.estimatedPrice,
             source: req.body.source || scrapItem.source,
-            ...(images.length > 0 && { images }),
+            ...(images.length > 0 && { images }), // تحديث الصور إذا كانت موجودة
         };
 
         // التحقق من أن الباركود فريد (إذا تم تغييره)
@@ -114,11 +132,16 @@ const updateScrapItem = async (req, res) => {
         // تحديث العنصر في قاعدة البيانات
         const updatedScrapItem = await ScrapItem.findByIdAndUpdate(req.params.id, updatedData, { new: true, runValidators: true });
 
-        // إعادة العنصر المحدّث
+        // إعادة العنصر المحدّث مع روابط الصور
+        const formattedUpdatedItem = {
+            ...updatedScrapItem.toObject(),
+            images: updatedScrapItem.images.map(image => `${process.env.BASE_URL}/${image.replace(/\\/g, '/')}`), // استخدام متغير بيئي مع معالجة المسار
+        };
+
         return res.status(200).json({
             success: true,
             message: 'تم تحديث العنصر بنجاح.',
-            data: updatedScrapItem,
+            data: formattedUpdatedItem,
         });
     } catch (error) {
         console.error('Error updating scrap item:', error);

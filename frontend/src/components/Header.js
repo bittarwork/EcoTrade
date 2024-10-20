@@ -34,6 +34,7 @@ const Header = () => {
                     <Link to="/orders" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">صفحة الطلبات</Link>
                     <Link to="/auctions" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">صفحة المزادات</Link>
                     {user ? user.role === "admin" ? (<Link to="/users" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">ادارة المستخدمين</Link>) : "" : ""}
+                    {user ? user.role === "admin" ? (<Link to="/scrap" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">ادارة المواد</Link>) : "" : ""}
                 </div>
 
 
@@ -96,6 +97,8 @@ const Header = () => {
                         <Link to="/" className="hover:text-gray-500">الصفحة الرئيسية</Link>
                         <Link to="/orders" className="hover:text-gray-500">صفحة الطلبات</Link>
                         <Link to="/auctions" className="hover:text-gray-500">صفحة المزادات</Link>
+                        {user ? user.role === "admin" ? (<Link to="/users" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">ادارة المستخدمين</Link>) : "" : ""}
+                        {user ? user.role === "admin" ? (<Link to="/scrap" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">ادارة المواد</Link>) : "" : ""}
 
                         {user ? (
                             <>
