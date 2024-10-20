@@ -10,7 +10,7 @@ export const UserProvider = ({ children }) => {
 
     // دالة لتسجيل المستخدم
     const registerUser = async (userData) => {
-        const response = await axios.post(`${API_URL}/users/register`, userData);
+        await axios.post(`${API_URL}/users/register`, userData);
     };
 
 
@@ -35,7 +35,7 @@ export const UserProvider = ({ children }) => {
 
     // دالة لتحديث بيانات المستخدم
     const updateUser = async (userId, updatedData) => {
-        const response = await axios.put(`${API_URL}/users/profile/${userId}`, updatedData);
+        await axios.put(`${API_URL}/users/profile/${userId}`, updatedData);
 
     };
 

@@ -15,6 +15,7 @@ import { UserProvider } from './context/UserContext';
 import Termofuse from "./pages/Termofuse";
 import Privacypolicy from './pages/Privacypolicy';
 import UserAdmin from './pages/admin/UserAdmin';
+import AdminScrapItems from './pages/admin/AdminScrapItems';
 import './index.css';
 
 const App = () => {
@@ -29,6 +30,7 @@ const App = () => {
             <Route path="/auctions" element={<AuctionsPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/developers" element={<DevelopersPage />} />
+            <Route path="/scrap" element={<AdminScrapItems />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/terms-of-service" element={<Termofuse />} />

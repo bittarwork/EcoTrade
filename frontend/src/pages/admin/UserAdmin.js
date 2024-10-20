@@ -8,7 +8,7 @@ const UserAdmin = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showForm, setShowForm] = useState(false);
-    const [userToEdit, setUserToEdit] = useState(null); // حالة جديدة للمستخدم الذي يتم تعديله
+    const [userToEdit, setUserToEdit] = useState(null);
 
     const REACT_APP_API_URL = process.env.REACT_APP_API_URL;
 
@@ -30,7 +30,7 @@ const UserAdmin = () => {
         };
 
         fetchUsers();
-    }, []);
+    }, [REACT_APP_API_URL]);
 
     const handleDeleteUser = async (userId) => {
         try {
