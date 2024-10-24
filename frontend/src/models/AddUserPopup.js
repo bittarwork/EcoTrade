@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Modal from 'react-modal'; // استيراد مكتبة react-model
 
 const AddUserPopup = ({ isOpen, onClose, onSubmit, userToEdit }) => {
     const [name, setName] = useState('');
@@ -58,10 +59,8 @@ const AddUserPopup = ({ isOpen, onClose, onSubmit, userToEdit }) => {
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <Modal isOpen={isOpen} onRequestClose={onClose} className="modal-content" overlayClassName="modal-overlay">
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow-md w-96">
                 <h2 className="text-2xl font-bold mb-4">
                     {userToEdit ? 'تعديل معلومات المستخدم' : 'إضافة مستخدم جديد'}
@@ -136,7 +135,7 @@ const AddUserPopup = ({ isOpen, onClose, onSubmit, userToEdit }) => {
                     إلغاء
                 </button>
             </form>
-        </div>
+        </Modal>
     );
 };
 

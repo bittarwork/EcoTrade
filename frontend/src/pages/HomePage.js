@@ -10,23 +10,7 @@ import ammar from "../assets/images/ammar.jpg"
 const HomePage = () => {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100" dir='rtl'>
-            <header className="relative w-full py-8 text-center">
-                <div
-                    className="absolute inset-0 bg-cover bg-center"
-                    style={{ backgroundImage: "url('https://img.freepik.com/premium-photo/recycling-nature-logo-with-plants-concept-recycling-reuse-environmental-ecological-conservation-generative-ai_853928-198.jpg')" }}
-                ></div>
-                <div className="absolute inset-0 bg-black opacity-50"></div> {/* Overlay to darken the background */}
-                <div className="relative z-10 text-white">
-                    <h1 className="text-5xl font-bold">مرحبًا بكم في <br /> EcoTrade</h1>
-                    <p className="text-lg mt-4">
-                        نحن هنا لنقدم لكم تجربة فريدة ومبتكرة في عالم إعادة التدوير، حيث نسهّل عليكم بيع الخردة بطريقة سهلة وفعالة.
-                        في EcoTrade، نؤمن بأن كل قطعة خردة يمكن أن تكون فرصة جديدة، ونسعى معًا لبناء مستقبل مستدام.
-                    </p>
-                    <p className="text-md mt-2">
-                        انضموا إلينا اليوم وكونوا جزءًا من الحل، مع EcoTrade نحن نعيد التدوير، ونحافظ على البيئة، ونحقق الربح معًا.
-                    </p>
-                </div>
-            </header>
+
 
 
             <section className="max-w-6xl w-full mx-auto p-6 bg-white rounded-lg mt-8 flex flex-col gap-x-2 md:flex-row">

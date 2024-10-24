@@ -239,7 +239,7 @@ const AdminScrapItems = () => {
                                 {/* Slider for Images */}
                                 <Slider {...settings}>
                                     {item.images.map((img, index) => (
-                                        <div key={index} className="relative h-56">
+                                        <div key={index} className="h-56">
                                             <img
                                                 src={img}
                                                 alt={item.name}
