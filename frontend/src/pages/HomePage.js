@@ -1,5 +1,12 @@
 import React from 'react';
 import logo from "../assets/images/logo.png"
+import img1 from "../assets/images/lloo.jpg"
+import img2 from "../assets/images/asd.jpg"
+import img3 from "../assets/images/images.png"
+import img4 from "../assets/images/marker-icon.png"
+import omar from "../assets/images/omar.jpg"
+import osama from "../assets/images/osama.png"
+import ammar from "../assets/images/ammar.jpg"
 const HomePage = () => {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100" dir='rtl'>
@@ -98,20 +105,20 @@ const HomePage = () => {
 
                 <div className="grid grid-cols-2 gap-4 mt-6">
                     <div className="flex flex-col items-center">
-                        <img src="https://via.placeholder.com/100" alt="شعار الشركة 1" className="h-16" />
-                        <span className="mt-2 text-gray-600">اسم الشركة 1</span>
+                        <img src={img1} alt="شعار الشركة 1" className="h-20" />
+
                     </div>
                     <div className="flex flex-col items-center">
-                        <img src="https://via.placeholder.com/100" alt="شعار الشركة 2" className="h-16" />
-                        <span className="mt-2 text-gray-600">اسم الشركة 2</span>
+                        <img src={img2} alt="شعار الشركة 2" className="h-20" />
+
                     </div>
                     <div className="flex flex-col items-center">
-                        <img src="https://via.placeholder.com/100" alt="شعار الشركة 3" className="h-16" />
-                        <span className="mt-2 text-gray-600">اسم الشركة 3</span>
+                        <img src={img3} alt="شعار الشركة 3" className="h-20" />
+
                     </div>
                     <div className="flex flex-col items-center">
-                        <img src="https://via.placeholder.com/100" alt="شعار الشركة 4" className="h-16" />
-                        <span className="mt-2 text-gray-600">اسم الشركة 4</span>
+                        <img src={img4} alt="شعار الشركة 4" className="h-20" />
+
                     </div>
                 </div>
 
@@ -126,7 +133,7 @@ const HomePage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                     <div>
                         <img
-                            src="https://via.placeholder.com/400x200" // صورة placeholder
+                            src="https://gurzu.com/img/gurzu/mern-stack-01.webp" // صورة placeholder
                             alt="التقنيات المستخدمة"
                             className="w-full h-48 object-cover rounded-lg"
                         />
@@ -138,7 +145,7 @@ const HomePage = () => {
                     <div>
                         <h3 className="text-xl font-semibold text-green-500">MongoDB</h3>
                         <img
-                            src="https://via.placeholder.com/400x200" // صورة placeholder
+                            src="https://www.gtech.com.tr/wp-content/uploads/2020/09/mongodb-nedir-1.png" // صورة placeholder
                             alt="MongoDB"
                             className="w-full h-48 object-cover rounded-lg mt-4"
                         />
@@ -152,7 +159,7 @@ const HomePage = () => {
                     <div>
                         <h3 className="text-xl font-semibold text-green-500">Express.js</h3>
                         <img
-                            src="https://via.placeholder.com/400x200" // صورة placeholder
+                            src="https://miro.medium.com/v2/resize:fit:1400/1*i2fRBk3GsYLeUk_Rh7AzHw.png" // صورة placeholder
                             alt="Express.js"
                             className="w-full h-48 object-cover rounded-lg mt-4"
                         />
@@ -164,7 +171,7 @@ const HomePage = () => {
                     <div>
                         <h3 className="text-xl font-semibold text-green-500">React.js</h3>
                         <img
-                            src="https://via.placeholder.com/400x200" // صورة placeholder
+                            src="https://delta-dev-software.fr/wp-content/uploads/2024/02/react-logo-freelogovectors.net_.png" // صورة placeholder
                             alt="React.js"
                             className="w-full h-48 object-cover rounded-lg mt-4"
                         />
@@ -178,7 +185,7 @@ const HomePage = () => {
                     <div>
                         <h3 className="text-xl font-semibold text-green-500">Node.js</h3>
                         <img
-                            src="https://via.placeholder.com/400x200" // صورة placeholder
+                            src="https://www.curotec.com/wp-content/uploads/2023/09/curotec-nodejs.png" // صورة placeholder
                             alt="Node.js"
                             className="w-full h-48 object-cover rounded-lg mt-4"
                         />
@@ -200,7 +207,7 @@ const HomePage = () => {
                 <div className="flex flex-col gap-x-5 md:flex-row justify-around items-center">
                     <div className="flex flex-col items-center mb-4 md:mb-0">
                         <img
-                            src="https://example.com/image1.jpg"
+                            src={osama}
                             alt="محمدم أسامة"
                             className="w-32 h-32 rounded-full border-2 border-green-600"
                         />
@@ -209,7 +216,7 @@ const HomePage = () => {
 
                     <div className="flex flex-col items-center mb-4 md:mb-0">
                         <img
-                            src="https://example.com/image3.jpg"
+                            src={ammar}
                             alt="عمار شامية"
                             className="w-32 h-32 rounded-full border-2 border-green-600"
                         />
@@ -218,7 +225,7 @@ const HomePage = () => {
 
                     <div className="flex flex-col items-center mb-4 md:mb-0">
                         <img
-                            src="https://example.com/image4.jpg"
+                            src={omar}
                             alt="عمر سقر"
                             className="w-32 h-32 rounded-full border-2 border-green-600"
                         />
