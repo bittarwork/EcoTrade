@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import UserContext from '../context/UserContext';
 
-const AddUserPopup = ({ isOpen, onClose, onSubmit, userToEdit }) => {
+const AddUserPopup = ({ isOpen, onClose, userToEdit }) => {
+    const { registerUser } = useContext(UserContext); // استخدم السياق
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -47,10 +49,11 @@ const AddUserPopup = ({ isOpen, onClose, onSubmit, userToEdit }) => {
         try {
             const userData = { name, email, role };
             if (password) userData.password = password;
-            await onSubmit(userData);
+            await registerUser(userData); // استخدم دالة التسجيل
             onClose();
         } catch (error) {
-            setError('حدث خطأ أثناء العملية. يرجى المحاولة مرة أخرى.');
+            // هنا يتم التعامل مع الأخطاء الواردة من الخادم
+            setError(error.response?.data?.message || 'حدث خطأ أثناء العملية. يرجى المحاولة مرة أخرى.');
         }
     };
 
@@ -62,7 +65,14 @@ const AddUserPopup = ({ isOpen, onClose, onSubmit, userToEdit }) => {
                         <h2 className="text-2xl font-bold mb-4">
                             {userToEdit ? 'تعديل معلومات المستخدم' : 'إضافة مستخدم جديد'}
                         </h2>
-                        {error && <p className="text-red-500 mb-4">{error}</p>}
+
+                        {/* عرض الخطأ بشكل جميل */}
+                        {error && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                                <strong className="font-bold">خطأ!</strong>
+                                <span className="block sm:inline">{error}</span>
+                            </div>
+                        )}
 
                         <div className="mb-4">
                             <label className="block text-gray-700">الاسم</label>

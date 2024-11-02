@@ -130,7 +130,7 @@ const AdminAuction = () => {
 
     const AuctionCard = ({ auction, onCancel, onClose, onDelete }) => (
         <div className={`border p-4 rounded-lg shadow-lg transition-all duration-300 
-                ${auction.status === 'canceled' ? 'bg-red-100' : auction.status === 'closed' ? 'bg-gray-100' : 'bg-white hover:shadow-xl'}`} dir='rtl' >
+            ${auction.status === 'canceled' ? 'bg-red-100' : auction.status === 'closed' ? 'bg-gray-100' : 'bg-white hover:shadow-xl'}`} dir='rtl'>
             <div className='mb-5'>
                 <Slider {...settings}>
                     {auction.images.map((image, index) => (
@@ -154,7 +154,11 @@ const AdminAuction = () => {
                 <button className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition duration-200" onClick={() => onCancel(auction._id)}>
                     إلغاء المزاد
                 </button>
-                <button className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition duration-200" onClick={() => onClose(auction._id)}>
+                <button
+                    className={`p-2 rounded-lg transition duration-200 ${auction.status === 'canceled' ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                    onClick={() => onClose(auction._id)}
+                    disabled={auction.status === 'canceled'}
+                >
                     إغلاق المزاد
                 </button>
                 <button className="p-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition duration-200" onClick={() => onDelete(auction._id)}>
@@ -167,6 +171,7 @@ const AdminAuction = () => {
             </Link>
         </div>
     );
+
     return (
         <div className="">
             <h1 className="text-4xl font-bold mb-6 text-center text-gray-800">إدارة المزادات</h1>

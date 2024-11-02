@@ -14,7 +14,8 @@ export const UserProvider = ({ children }) => {
         try {
             await axios.post(`${API_URL}/users/register`, userData);
         } catch (error) {
-            console.error("Registration failed:", error);
+            // إعادة الخطأ للمكون الذي يستدعيها
+            throw error;
         }
     };
 
@@ -27,9 +28,9 @@ export const UserProvider = ({ children }) => {
             localStorage.setItem('sessionStart', Date.now());
         } catch (error) {
             if (error.response && error.response.status === 401) {
-                console.error('Login failed:', error);
+                throw new Error('فشل تسجيل الدخول: بيانات الاعتماد غير صحيحة.');
             } else {
-                console.error('An unexpected error occurred:', error);
+                throw new Error('حدث خطأ غير متوقع أثناء تسجيل الدخول.');
             }
         }
     };
@@ -46,7 +47,7 @@ export const UserProvider = ({ children }) => {
         const sessionStart = localStorage.getItem('sessionStart');
         if (sessionStart && Date.now() - sessionStart > SESSION_DURATION) {
             logoutUser();
-            alert("Your session has expired. Please log in again.");
+            alert("انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.");
         }
     }, []);
 
@@ -57,7 +58,7 @@ export const UserProvider = ({ children }) => {
             const response = await axios.get(`${API_URL}/users/profile/${userId}`);
             setUser(response.data.user);
         } catch (error) {
-            console.error("Failed to fetch user profile:", error);
+            console.error("فشل في جلب بيانات المستخدم:", error);
         }
     };
 
@@ -67,7 +68,7 @@ export const UserProvider = ({ children }) => {
             checkSessionExpiration();
             await axios.put(`${API_URL}/users/profile/${userId}`, updatedData);
         } catch (error) {
-            console.error("Failed to update user:", error);
+            console.error("فشل في تحديث بيانات المستخدم:", error);
         }
     };
 
@@ -77,7 +78,7 @@ export const UserProvider = ({ children }) => {
             checkSessionExpiration();
             await axios.delete(`${API_URL}/users/profile/${userId}`);
         } catch (error) {
-            console.error("Failed to delete user:", error);
+            console.error("فشل في حذف المستخدم:", error);
         }
     };
 
@@ -89,7 +90,7 @@ export const UserProvider = ({ children }) => {
             setUser(JSON.parse(storedUser));
         }
         setLoading(false);
-    }, [checkSessionExpiration]); // إضافة checkSessionExpiration هنا
+    }, [checkSessionExpiration]);
 
     return (
         <UserContext.Provider value={{

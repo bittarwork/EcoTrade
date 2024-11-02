@@ -6,20 +6,21 @@ const LoginPage = () => {
     const { loginUser } = useContext(UserContext);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState(null); // حالة لتخزين رسالة الخطأ
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
             await loginUser({ email, password });
-            // هنا يمكن أن تضيف منطقًا لتوجيه المستخدم حسب دوره
             const userRole = JSON.parse(localStorage.getItem('user')).role;
             if (userRole === 'admin') {
-                navigate('/'); // الصفحة المناسبة للإدارة
+                navigate('/admin'); // الصفحة المناسبة للإدارة
             } else {
-                navigate('/'); // الصفحة المناسبة للمستخدمين العاديين
+                navigate('/dashboard'); // الصفحة المناسبة للمستخدمين العاديين
             }
         } catch (error) {
+            setError('فشل تسجيل الدخول. تحقق من البريد الإلكتروني أو كلمة المرور وأعد المحاولة.');
             console.error('Login failed:', error);
         }
     };
@@ -28,6 +29,11 @@ const LoginPage = () => {
         <div className="flex flex-col items-center justify-center mt-10">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
                 <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">تسجيل الدخول</h2>
+                {error && ( // عرض رسالة الخطأ إذا كانت موجودة
+                    <div className="mb-4 text-red-600 bg-red-100 p-3 rounded text-center">
+                        {error}
+                    </div>
+                )}
                 <form onSubmit={handleLogin} className="flex flex-col">
                     <input
                         type="email"
