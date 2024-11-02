@@ -9,9 +9,11 @@ const UserAdmin = () => {
     const [error, setError] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [userToEdit, setUserToEdit] = useState(null);
-    const [searchTerm, setSearchTerm] = useState(''); // حالة البحث
+    const [searchTerm, setSearchTerm] = useState('');
 
     const REACT_APP_API_URL = process.env.REACT_APP_API_URL;
+
+
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -44,7 +46,6 @@ const UserAdmin = () => {
 
     const handleAddUser = async (userData) => {
         await registerUser(userData);
-        // تحديث قائمة المستخدمين بعد إضافة مستخدم جديد
         const response = await fetch(`${REACT_APP_API_URL}/users/users`);
         const data = await response.json();
         if (data && Array.isArray(data.users)) {
@@ -59,13 +60,13 @@ const UserAdmin = () => {
         setUsers((prevUsers) =>
             prevUsers.map(user => user.id === userToEdit.id ? { ...user, ...userData } : user)
         );
-        setUserToEdit(null); // إعادة تعيين المستخدم المعدل
+        setUserToEdit(null);
     };
 
     const filteredUsers = users.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    ); // تصفية المستخدمين بناءً على مصطلح البحث
+    );
 
     if (loading) {
         return <p>جاري تحميل المستخدمين...</p>;
@@ -90,7 +91,10 @@ const UserAdmin = () => {
                             className="border border-gray-300 rounded px-4 py-2 w-1/3"
                         />
                         <button
-                            onClick={() => setShowForm(true)}
+                            onClick={() => {
+                                setShowForm(true);
+                                setUserToEdit(null);
+                            }}
                             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                         >
                             إضافة مستخدم جديد
@@ -126,7 +130,7 @@ const UserAdmin = () => {
                                                 {user.profileImage ? (
                                                     <img
                                                         loading="lazy"
-                                                        src={`${REACT_APP_API_URL}/${user.profileImage}`}
+                                                        src={`http://localhost:5000/${user.profileImage}`}
                                                         alt={user.name}
                                                         className="w-12 h-12 rounded-full mx-auto border"
                                                     />
@@ -146,7 +150,7 @@ const UserAdmin = () => {
                                                 <button
                                                     onClick={() => {
                                                         setUserToEdit(user);
-                                                        setShowForm(true); // إظهار نموذج التعديل
+                                                        setShowForm(true);
                                                     }}
                                                     className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 mr-2"
                                                 >
