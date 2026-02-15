@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Line } from 'react-chartjs-2'; // استخدام الرسم البياني الخطي
-import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js'; // إضافة PointElement
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
+import { API_BASE_URL } from '../../config/api';
 
-// تسجيل العناصر المستخدمة
-ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement); // تسجيل PointElement
+// Register chart elements
+ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
 
 const AdminContact = () => {
     const [messages, setMessages] = useState([]);
     const [selectedMessage, setSelectedMessage] = useState(null);
 
     useEffect(() => {
-        // جلب البيانات من API
+        // Fetch messages from API
         const fetchMessages = async () => {
             try {
-                const response = await fetch(`${process.env.REACT_APP_API_URL}/messages`);
+                const response = await fetch(`${API_BASE_URL}/messages`);
                 const data = await response.json();
                 setMessages(data);
             } catch (error) {
@@ -29,15 +30,15 @@ const AdminContact = () => {
     };
 
     const handleDelete = async (id) => {
-        // عملية الحذف باستخدام API
+        // Delete message using API
         try {
-            const response = await fetch(`http://localhost:5000/api/messages/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/messages/${id}`, {
                 method: 'DELETE',
             });
 
-            // تحقق من نجاح عملية الحذف
+            // Check if deletion was successful
             if (response.ok) {
-                setMessages(messages.filter(msg => msg._id !== id)); // تحديث القائمة بعد الحذف
+                setMessages(messages.filter(msg => msg._id !== id)); // Update list after deletion
                 setSelectedMessage(null); // إلغاء اختيار الرسالة بعد الحذف
             } else {
                 console.error('Error deleting message:', response.statusText);

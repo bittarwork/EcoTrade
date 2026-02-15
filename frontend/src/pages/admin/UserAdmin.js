@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import UserContext from '../../context/UserContext';
 import AddUserPopup from '../../models/AddUserPopup';
+import { API_BASE_URL, getServerUrl } from '../../config/api';
 
 const UserAdmin = () => {
     const { registerUser, deleteUser, updateUser, user } = useContext(UserContext);
@@ -11,14 +12,12 @@ const UserAdmin = () => {
     const [userToEdit, setUserToEdit] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const REACT_APP_API_URL = process.env.REACT_APP_API_URL;
-
 
 
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await fetch(`${REACT_APP_API_URL}/users/users`);
+                const response = await fetch(`${API_BASE_URL}/users/users`);
                 const data = await response.json();
                 if (data && Array.isArray(data.users)) {
                     setUsers(data.users);
@@ -33,7 +32,7 @@ const UserAdmin = () => {
         };
 
         fetchUsers();
-    }, [REACT_APP_API_URL]);
+    }, []);
 
     const handleDeleteUser = async (userId) => {
         try {
@@ -46,7 +45,7 @@ const UserAdmin = () => {
 
     const handleAddUser = async (userData) => {
         await registerUser(userData);
-        const response = await fetch(`${REACT_APP_API_URL}/users/users`);
+        const response = await fetch(`${API_BASE_URL}/users/users`);
         const data = await response.json();
         if (data && Array.isArray(data.users)) {
             setUsers(data.users);
@@ -130,7 +129,7 @@ const UserAdmin = () => {
                                                 {user.profileImage ? (
                                                     <img
                                                         loading="lazy"
-                                                        src={`http://localhost:5000/${user.profileImage}`}
+                                                        src={getServerUrl(user.profileImage)}
                                                         alt={user.name}
                                                         className="w-12 h-12 rounded-full mx-auto border"
                                                     />

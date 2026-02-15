@@ -3,6 +3,7 @@ import Slider from 'react-slick';
 import { useNavigate } from 'react-router-dom';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { getApiUrl } from '../../config/api';
 
 const UserAuction = () => {
     const [auctions, setAuctions] = useState([]);
@@ -19,7 +20,7 @@ const UserAuction = () => {
     useEffect(() => {
         const fetchAuctions = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/auction');
+                const response = await fetch(getApiUrl('auction'));
                 if (!response.ok) {
                     throw new Error('Failed to fetch auctions');
                 }

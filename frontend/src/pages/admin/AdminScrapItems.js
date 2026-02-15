@@ -8,6 +8,7 @@ import 'slick-carousel/slick/slick-theme.css';
 import ConfirmModal from '../../models/ConfirmModal';
 import PopupForm from '../../models/ScrapFormPopup';
 import ScreapItemsAnalytics from '../../models/ScreapItemsAnalytics';
+import { API_BASE_URL } from '../../config/api';
 
 const AdminScrapItems = () => {
     const { user } = useContext(UserContext);
@@ -48,7 +49,7 @@ const AdminScrapItems = () => {
     const fetchScrapItems = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/scrap`);
+            const response = await fetch(`${API_BASE_URL}/scrap`);
             if (!response.ok) {
                 const errorMessage = await response.text();
                 throw new Error(`فشل في جلب البيانات: ${errorMessage}`);
@@ -65,7 +66,7 @@ const AdminScrapItems = () => {
     const createScrapItem = async (formData) => {
         setLoading(true);
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/scrap`, {
+            const response = await fetch(`${API_BASE_URL}/scrap`, {
                 method: 'POST',
                 body: formData,
             });
@@ -87,7 +88,7 @@ const AdminScrapItems = () => {
     const updateScrapItem = async (id, updatedFormData) => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/scrap/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/scrap/${id}`, {
                 method: 'PUT',
                 body: updatedFormData,
             });

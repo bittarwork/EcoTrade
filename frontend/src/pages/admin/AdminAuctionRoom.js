@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { API_BASE_URL } from '../../config/api';
 
 const AdminAuctionRoom = () => {
     const { auctionId } = useParams();
@@ -14,19 +15,19 @@ const AdminAuctionRoom = () => {
     useEffect(() => {
         const fetchAuctionDetails = async () => {
             try {
-                const response = await fetch(`${process.env.REACT_APP_API_URL}/auction/${auctionId}`);
+                const response = await fetch(`${API_BASE_URL}/auction/${auctionId}`);
                 if (!response.ok) {
                     throw new Error('فشل في جلب بيانات المزاد');
                 }
                 const data = await response.json();
                 setAuction(data);
 
-                // جلب معلومات المزايدين
-                const bidders = data.bids.map(bid => fetch(`http://localhost:5000/api/users/profile/${bid.bidder}`));
+                // Fetch bidders information
+                const bidders = data.bids.map(bid => fetch(`${API_BASE_URL}/users/profile/${bid.bidder}`));
                 const responses = await Promise.all(bidders);
                 const biddersData = await Promise.all(responses.map(res => res.json()));
 
-                // تخزين معلومات المزايدين
+                // Store bidders information
                 const biddersInfoMap = {};
                 biddersData.forEach((userData, index) => {
                     biddersInfoMap[data.bids[index].bidder] = userData.user;
