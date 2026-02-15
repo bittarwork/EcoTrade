@@ -71,6 +71,7 @@ export const UserProvider = ({ children }) => {
             await axios.put(`${API_URL}/users/profile/${userId}`, updatedData);
         } catch (error) {
             console.error("فشل في تحديث بيانات المستخدم:", error);
+            throw error;
         }
     };
 
@@ -81,6 +82,7 @@ export const UserProvider = ({ children }) => {
             await axios.delete(`${API_URL}/users/profile/${userId}`);
         } catch (error) {
             console.error("فشل في حذف المستخدم:", error);
+            throw error;
         }
     };
 

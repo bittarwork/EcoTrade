@@ -1,7 +1,46 @@
 import React, { useState, useEffect, useContext } from 'react';
 import UserContext from '../../context/UserContext';
 import AddUserPopup from '../../models/AddUserPopup';
+import DeleteUserModal from '../../models/DeleteUserModal';
 import { API_BASE_URL, getServerUrl } from '../../config/api';
+import {
+    UsersIcon,
+    UserAddIcon,
+    SearchIcon,
+    XIcon,
+    PencilIcon,
+    TrashIcon,
+    ExclamationCircleIcon,
+    ShieldCheckIcon,
+    UserCircleIcon,
+    RefreshIcon,
+} from '@heroicons/react/outline';
+
+/**
+ * Format date to Gregorian format for display
+ */
+const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+};
+
+/**
+ * Get user initials for avatar fallback
+ */
+const getInitials = (name) => {
+    if (!name) return '?';
+    return name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+};
 
 const UserAdmin = () => {
     const { registerUser, deleteUser, updateUser, user } = useContext(UserContext);
@@ -11,35 +50,38 @@ const UserAdmin = () => {
     const [showForm, setShowForm] = useState(false);
     const [userToEdit, setUserToEdit] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, user: null });
 
-
+    const fetchUsers = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/users`);
+            const data = await response.json();
+            if (data && Array.isArray(data.users)) {
+                setUsers(data.users);
+            } else {
+                setError('البيانات المستلمة غير صالحة');
+            }
+        } catch (err) {
+            setError('حدث خطأ أثناء جلب المستخدمين.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await fetch(`${API_BASE_URL}/users/users`);
-                const data = await response.json();
-                if (data && Array.isArray(data.users)) {
-                    setUsers(data.users);
-                } else {
-                    setError("البيانات المستلمة غير صالحة");
-                }
-            } catch (error) {
-                setError('حدث خطأ أثناء جلب المستخدمين.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchUsers();
     }, []);
 
     const handleDeleteUser = async (userId) => {
         try {
             await deleteUser(userId);
-            setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-        } catch (error) {
-            setError('حدث خطأ أثناء حذف المستخدم.');
+            setUsers((prev) => prev.filter((u) => u.id !== userId));
+            setDeleteModal({ isOpen: false, user: null });
+        } catch (err) {
+            setError(err.response?.data?.message || 'حدث خطأ أثناء حذف المستخدم.');
         }
     };
 
@@ -50,166 +92,390 @@ const UserAdmin = () => {
         if (data && Array.isArray(data.users)) {
             setUsers(data.users);
         } else {
-            setError("البيانات المستلمة غير صالحة");
+            setError('البيانات المستلمة غير صالحة');
         }
     };
 
     const handleEditUser = async (userData) => {
         await updateUser(userToEdit.id, userData);
-        setUsers((prevUsers) =>
-            prevUsers.map(user => user.id === userToEdit.id ? { ...user, ...userData } : user)
+        setUsers((prev) =>
+            prev.map((u) => (u.id === userToEdit.id ? { ...u, ...userData } : u))
         );
         setUserToEdit(null);
     };
 
-    const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users.filter((u) => {
+        const matchesSearch =
+            u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesRole =
+            roleFilter === 'all' || u.role === roleFilter;
+        return matchesSearch && matchesRole;
+    });
 
+    const stats = {
+        total: users.length,
+        admins: users.filter((u) => u.role === 'admin').length,
+        regular: users.filter((u) => u.role === 'user').length,
+    };
+
+    // Loading skeleton
     if (loading) {
-        return <p>جاري تحميل المستخدمين...</p>;
+        return (
+            <div className="space-y-6 animate-fadeIn" dir="rtl">
+                <div className="bg-white rounded-2xl shadow-lg p-6 border-r-4 border-blue-500">
+                    <div className="h-10 w-48 bg-gray-200 rounded-lg mb-2 animate-pulse" />
+                    <div className="h-5 w-64 bg-gray-100 rounded animate-pulse" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="bg-white rounded-2xl shadow p-6 animate-pulse">
+                            <div className="h-6 w-24 bg-gray-200 rounded mb-4" />
+                            <div className="h-10 w-16 bg-gray-100 rounded" />
+                        </div>
+                    ))}
+                </div>
+                <div className="bg-white rounded-2xl shadow overflow-hidden">
+                    <div className="p-6 space-y-4">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                                    <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
+                                </div>
+                                <div className="h-8 w-20 bg-gray-200 rounded animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
     }
 
-    if (error) {
-        return <p className="text-red-500 text-center">{error}</p>;
+    // Error state with retry
+    if (error && users.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] p-6" dir="rtl">
+                <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-red-50">
+                        <ExclamationCircleIcon className="w-8 h-8 text-red-600" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">حدث خطأ</h3>
+                    <p className="text-gray-600 mb-6">{error}</p>
+                    <button
+                        onClick={fetchUsers}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200"
+                    >
+                        <RefreshIcon className="w-5 h-5" strokeWidth={2} />
+                        إعادة المحاولة
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="space-y-6" dir='rtl'>
-            {user && user.role === "admin" ? (
+        <div className="space-y-6" dir="rtl">
+            {user && user.role === 'admin' ? (
                 <>
-                    {/* Page Header */}
-                    <div className="bg-white rounded-xl shadow-lg p-6 border-r-4 border-blue-600">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    {/* Page header */}
+                    <div className="bg-white rounded-2xl shadow-lg p-6 border-r-4 border-blue-500 animate-fadeIn">
+                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800 mb-2">إدارة المستخدمين</h1>
-                                <p className="text-gray-600">عرض وإدارة جميع مستخدمي المنصة</p>
+                                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+                                    إدارة المستخدمين
+                                </h1>
+                                <p className="text-gray-600 text-sm sm:text-base">
+                                    عرض وإدارة جميع مستخدمي المنصة
+                                </p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3">
-                                <input
-                                    type="text"
-                                    placeholder="ابحث عن مستخدم..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                />
+                                {/* Search */}
+                                <div className="relative flex-1 sm:min-w-[200px]">
+                                    <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" strokeWidth={2} />
+                                    <input
+                                        type="text"
+                                        placeholder="ابحث بالاسم أو البريد..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pr-10 pl-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                    {searchTerm && (
+                                        <button
+                                            onClick={() => setSearchTerm('')}
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 text-gray-500"
+                                            aria-label="Clear search"
+                                        >
+                                            <XIcon className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                                {/* Role filter */}
+                                <select
+                                    value={roleFilter}
+                                    onChange={(e) => setRoleFilter(e.target.value)}
+                                    className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                                >
+                                    <option value="all">جميع الأدوار</option>
+                                    <option value="admin">مدير</option>
+                                    <option value="user">مستخدم</option>
+                                </select>
+                                {/* Add user button */}
                                 <button
                                     onClick={() => {
                                         setShowForm(true);
                                         setUserToEdit(null);
                                     }}
-                                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 font-medium"
+                                    className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 shadow-lg shadow-blue-500/30"
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    إضافة مستخدم جديد
+                                    <UserAddIcon className="w-5 h-5" strokeWidth={2} />
+                                    إضافة مستخدم
                                 </button>
+                            </div>
+                        </div>
+                        {error && users.length > 0 && (
+                            <div className="mt-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between">
+                                <span>{error}</span>
+                                <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+                                    <XIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Stats cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-white rounded-2xl shadow p-6 border-r-4 border-blue-500 animate-fadeIn">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-blue-50">
+                                    <UsersIcon className="w-6 h-6 text-blue-600" strokeWidth={1.5} />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500 font-medium">إجمالي المستخدمين</p>
+                                    <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-2xl shadow p-6 border-r-4 border-amber-500 animate-fadeIn">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-amber-50">
+                                    <ShieldCheckIcon className="w-6 h-6 text-amber-600" strokeWidth={1.5} />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500 font-medium">المدراء</p>
+                                    <p className="text-2xl font-bold text-gray-900">{stats.admins}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-2xl shadow p-6 border-r-4 border-emerald-500 animate-fadeIn">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-emerald-50">
+                                    <UserCircleIcon className="w-6 h-6 text-emerald-600" strokeWidth={1.5} />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500 font-medium">المستخدمون</p>
+                                    <p className="text-2xl font-bold text-gray-900">{stats.regular}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <AddUserPopup
                         isOpen={showForm}
-                        onClose={() => setShowForm(false)}
+                        onClose={() => {
+                            setShowForm(false);
+                            setUserToEdit(null);
+                        }}
                         onSubmit={userToEdit ? handleEditUser : handleAddUser}
                         userToEdit={userToEdit}
                     />
 
+                    <DeleteUserModal
+                        isOpen={deleteModal.isOpen}
+                        userName={deleteModal.user?.name}
+                        onConfirm={() => deleteModal.user && handleDeleteUser(deleteModal.user.id)}
+                        onCancel={() => setDeleteModal({ isOpen: false, user: null })}
+                    />
+
                     {filteredUsers.length === 0 ? (
-                        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-                            <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                            <h3 className="text-lg font-semibold text-gray-800 mb-2">لا يوجد مستخدمين</h3>
-                            <p className="text-gray-500">لم يتم العثور على أي مستخدمين يطابقون البحث</p>
+                        <div className="bg-white rounded-2xl shadow-lg p-12 text-center animate-fadeIn">
+                            <div className="inline-flex items-center justify-center w-20 h-20 mb-4 rounded-full bg-gray-100">
+                                <UsersIcon className="w-10 h-10 text-gray-400" strokeWidth={1.5} />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">لا يوجد مستخدمين</h3>
+                            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                                {searchTerm || roleFilter !== 'all'
+                                    ? 'لم يتم العثور على مستخدمين يطابقون البحث أو الفلتر.'
+                                    : 'لم يتم إضافة أي مستخدمين بعد. اضغط على "إضافة مستخدم" للبدء.'}
+                            </p>
+                            {(searchTerm || roleFilter !== 'all') ? (
+                                <button
+                                    onClick={() => {
+                                        setSearchTerm('');
+                                        setRoleFilter('all');
+                                    }}
+                                    className="text-blue-600 hover:text-blue-700 font-medium"
+                                >
+                                    إعادة تعيين البحث
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setShowForm(true)}
+                                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all"
+                                >
+                                    <UserAddIcon className="w-5 h-5" strokeWidth={2} />
+                                    إضافة مستخدم
+                                </button>
+                            )}
                         </div>
                     ) : (
-                        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gradient-to-r from-blue-600 to-blue-700">
-                                        <tr>
-                                            <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">الصورة</th>
-                                            <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">الاسم</th>
-                                            <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">البريد الإلكتروني</th>
-                                            <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">الدور</th>
-                                            <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">تاريخ الانضمام</th>
-                                            <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">إجراءات</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredUsers.map((user, index) => (
-                                            <tr key={user.id} className={`hover:bg-blue-50 transition duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center justify-center">
-                                                        {user.profileImage ? (
-                                                            <img
-                                                                loading="lazy"
-                                                                src={getServerUrl(user.profileImage)}
-                                                                alt={user.name}
-                                                                className="w-12 h-12 rounded-full border-2 border-blue-500 object-cover shadow-md"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                                                                {user.name.charAt(0)}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="font-semibold text-gray-800">{user.name}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-gray-600">{user.email}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                                                        user.role === 'admin' 
-                                                            ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300' 
-                                                            : 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300'
-                                                    }`}>
-                                                        {user.role === 'admin' ? '👑 مدير' : '👤 مستخدم'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                                                    {user.createdAt}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => {
-                                                                setUserToEdit(user);
-                                                                setShowForm(true);
-                                                            }}
-                                                            className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-4 py-2 rounded-lg hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
-                                                        >
-                                                            تعديل
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteUser(user.id)}
-                                                            className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
-                                                        >
-                                                            حذف
-                                                        </button>
-                                                    </div>
-                                                </td>
+                        <>
+                            {/* Desktop table */}
+                            <div className="hidden md:block bg-white rounded-2xl shadow-lg overflow-hidden animate-fadeIn">
+                                <div className="overflow-x-auto scrollbar-thin">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead>
+                                            <tr className="bg-gradient-to-r from-blue-600 to-blue-700">
+                                                <th className="px-6 py-4 text-right text-xs font-semibold text-white uppercase tracking-wider">الصورة</th>
+                                                <th className="px-6 py-4 text-right text-xs font-semibold text-white uppercase tracking-wider">الاسم</th>
+                                                <th className="px-6 py-4 text-right text-xs font-semibold text-white uppercase tracking-wider">البريد</th>
+                                                <th className="px-6 py-4 text-right text-xs font-semibold text-white uppercase tracking-wider">الدور</th>
+                                                <th className="px-6 py-4 text-right text-xs font-semibold text-white uppercase tracking-wider">تاريخ الانضمام</th>
+                                                <th className="px-6 py-4 text-right text-xs font-semibold text-white uppercase tracking-wider">إجراءات</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {filteredUsers.map((u) => (
+                                                <tr key={u.id} className="hover:bg-blue-50/50 transition-colors duration-200">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex justify-center">
+                                                            {u.profileImage ? (
+                                                                <img
+                                                                    loading="lazy"
+                                                                    src={getServerUrl(u.profileImage)}
+                                                                    alt={u.name}
+                                                                    className="w-11 h-11 rounded-full object-cover ring-2 ring-white shadow"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow">
+                                                                    {getInitials(u.name)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className="font-medium text-gray-900">{u.name}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-600 text-sm">
+                                                        {u.email}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span
+                                                            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${
+                                                                u.role === 'admin'
+                                                                    ? 'bg-amber-100 text-amber-800'
+                                                                    : 'bg-blue-50 text-blue-700'
+                                                            }`}
+                                                        >
+                                                            {u.role === 'admin' ? 'مدير' : 'مستخدم'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-600 text-sm">
+                                                        {formatDate(u.createdAt)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center gap-2 justify-end">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setUserToEdit(u);
+                                                                    setShowForm(true);
+                                                                }}
+                                                                className="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
+                                                                title="تعديل"
+                                                            >
+                                                                <PencilIcon className="w-5 h-5" strokeWidth={2} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setDeleteModal({ isOpen: true, user: u })}
+                                                                className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                                                                title="حذف"
+                                                            >
+                                                                <TrashIcon className="w-5 h-5" strokeWidth={2} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                        </div>
+
+                            {/* Mobile cards */}
+                            <div className="md:hidden space-y-3 animate-fadeIn">
+                                {filteredUsers.map((u) => (
+                                    <div
+                                        key={u.id}
+                                        className="bg-white rounded-2xl shadow p-4 border border-gray-100 hover:shadow-md transition-shadow"
+                                    >
+                                        <div className="flex items-start gap-4">
+                                            {u.profileImage ? (
+                                                <img
+                                                    src={getServerUrl(u.profileImage)}
+                                                    alt={u.name}
+                                                    className="w-14 h-14 rounded-full object-cover ring-2 ring-gray-100"
+                                                />
+                                            ) : (
+                                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                                                    {getInitials(u.name)}
+                                                </div>
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-semibold text-gray-900 truncate">{u.name}</h3>
+                                                <p className="text-sm text-gray-500 truncate">{u.email}</p>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <span
+                                                        className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                                                            u.role === 'admin' ? 'bg-amber-100 text-amber-800' : 'bg-blue-50 text-blue-700'
+                                                        }`}
+                                                    >
+                                                        {u.role === 'admin' ? 'مدير' : 'مستخدم'}
+                                                    </span>
+                                                    <span className="text-xs text-gray-400">{formatDate(u.createdAt)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setUserToEdit(u);
+                                                        setShowForm(true);
+                                                    }}
+                                                    className="p-2 rounded-lg text-amber-600 hover:bg-amber-50"
+                                                >
+                                                    <PencilIcon className="w-5 h-5" strokeWidth={2} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setDeleteModal({ isOpen: true, user: u })}
+                                                    className="p-2 rounded-lg text-red-600 hover:bg-red-50"
+                                                >
+                                                    <TrashIcon className="w-5 h-5" strokeWidth={2} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </>
             ) : (
-                <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="bg-white rounded-xl shadow-lg p-12 text-center max-w-md">
-                        <svg className="mx-auto h-16 w-16 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">ليس لديك صلاحيات كافية</h3>
+                <div className="flex items-center justify-center min-h-[60vh]" dir="rtl">
+                    <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center animate-fadeIn">
+                        <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-red-50">
+                            <ExclamationCircleIcon className="w-8 h-8 text-red-600" strokeWidth={1.5} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">ليس لديك صلاحيات كافية</h3>
                         <p className="text-gray-600">يجب أن تكون مديراً للوصول إلى هذه الصفحة</p>
                     </div>
                 </div>

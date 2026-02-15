@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react';
-import { LogoutIcon, XIcon } from '@heroicons/react/outline';
+import { UserGroupIcon, XIcon } from '@heroicons/react/outline';
 
 /**
- * LogoutConfirmModal - Modern confirmation dialog for logout action
- * Features: backdrop blur, smooth animations, keyboard support, accessible design
+ * DeleteUserModal - Confirmation dialog before deleting a user
+ * Features: backdrop blur, smooth animations, keyboard support
  */
-const LogoutConfirmModal = ({ onConfirm, onCancel }) => {
-    // Close modal on Escape key press
+const DeleteUserModal = ({ isOpen, userName, onConfirm, onCancel }) => {
     useEffect(() => {
         const handleEscape = (e) => {
             if (e.key === 'Escape') onCancel();
@@ -15,57 +14,50 @@ const LogoutConfirmModal = ({ onConfirm, onCancel }) => {
         return () => window.removeEventListener('keydown', handleEscape);
     }, [onCancel]);
 
+    if (!isOpen) return null;
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
             onClick={onCancel}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="logout-modal-title"
+            aria-labelledby="delete-user-modal-title"
         >
             <div
                 className="relative w-full max-w-md overflow-hidden bg-white rounded-2xl shadow-2xl animate-scaleIn"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Decorative gradient header */}
                 <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-500 via-red-600 to-rose-600" />
-
-                {/* Close button */}
                 <button
                     onClick={onCancel}
-                    className="absolute top-4 left-4 p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                    className="absolute top-4 left-4 p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
                     aria-label="Close"
                 >
                     <XIcon className="w-5 h-5" />
                 </button>
-
-                {/* Content */}
                 <div className="p-8 pt-12 text-center">
-                    {/* Icon with subtle background */}
                     <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-red-50">
-                        <LogoutIcon className="w-8 h-8 text-red-600" strokeWidth={1.5} />
+                        <UserGroupIcon className="w-8 h-8 text-red-600" strokeWidth={1.5} />
                     </div>
-
-                    <h2 id="logout-modal-title" className="text-xl font-bold text-gray-900 mb-2">
-                        تسجيل الخروج
+                    <h2 id="delete-user-modal-title" className="text-xl font-bold text-gray-900 mb-2">
+                        حذف المستخدم
                     </h2>
                     <p className="text-gray-600 mb-8 leading-relaxed">
-                        هل أنت متأكد أنك تريد تسجيل الخروج من حسابك؟
+                        هل أنت متأكد من حذف المستخدم <strong className="text-gray-900">{userName}</strong>؟ لا يمكن التراجع عن هذا الإجراء.
                     </p>
-
-                    {/* Action buttons */}
                     <div className="flex flex-col-reverse sm:flex-row gap-3 justify-center">
                         <button
                             onClick={onCancel}
-                            className="px-6 py-3 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200"
+                            className="px-6 py-3 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all duration-200"
                         >
                             إلغاء
                         </button>
                         <button
                             onClick={onConfirm}
-                            className="px-6 py-3 rounded-xl font-medium text-white bg-red-600 hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-lg shadow-red-500/30"
+                            className="px-6 py-3 rounded-xl font-medium text-white bg-red-600 hover:bg-red-700 transition-all duration-200 shadow-lg shadow-red-500/30"
                         >
-                            تسجيل الخروج
+                            حذف
                         </button>
                     </div>
                 </div>
@@ -74,4 +66,4 @@ const LogoutConfirmModal = ({ onConfirm, onCancel }) => {
     );
 };
 
-export default LogoutConfirmModal;
+export default DeleteUserModal;
