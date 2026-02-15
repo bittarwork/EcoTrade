@@ -3,7 +3,6 @@ import React, { useState, useContext } from 'react';
 import { 
     MenuIcon, 
     XIcon, 
-    SearchIcon,
     UserCircleIcon,
     LogoutIcon
 } from '@heroicons/react/outline';
@@ -28,7 +27,7 @@ const AdminHeader = ({ sidebarOpen, setSidebarOpen }) => {
                 <div className="px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         
-                        {/* Right Side - Menu Toggle & Logo */}
+                        {/* Left Side - Menu Toggle & Logo */}
                         <div className="flex items-center gap-4">
                             {/* Sidebar Toggle */}
                             <button
@@ -50,26 +49,15 @@ const AdminHeader = ({ sidebarOpen, setSidebarOpen }) => {
                             </div>
                         </div>
 
-                        {/* Center - Search Bar (hidden on mobile) */}
-                        <div className="hidden lg:flex flex-1 max-w-md mx-8">
-                            <div className="relative w-full">
-                                <input
-                                    type="text"
-                                    placeholder="بحث عن المزادات، الطلبات، المستخدمين..."
-                                    className="w-full px-4 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    dir="rtl"
-                                />
-                                <SearchIcon className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                        {/* Center - Page Title or Info */}
+                        <div className="hidden md:flex flex-1 items-center justify-center">
+                            <div className="text-center">
+                                <p className="text-sm text-gray-600">لوحة تحكم المدير - EcoTrade</p>
                             </div>
                         </div>
 
-                        {/* Left Side - Actions */}
+                        {/* Right Side - User Profile */}
                         <div className="flex items-center gap-2 md:gap-4">
-                            
-                            {/* Search Icon for Mobile */}
-                            <button className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-all duration-200">
-                                <SearchIcon className="h-5 w-5" />
-                            </button>
 
                             {/* User Profile Dropdown */}
                             <div className="relative">
@@ -86,7 +74,7 @@ const AdminHeader = ({ sidebarOpen, setSidebarOpen }) => {
                                     ) : (
                                         <UserCircleIcon className="h-9 w-9 text-gray-600" />
                                     )}
-                                    <div className="hidden md:block text-right mr-2">
+                                    <div className="hidden md:block text-left ml-2">
                                         <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
                                         <p className="text-xs text-gray-500">مدير النظام</p>
                                     </div>
@@ -94,10 +82,28 @@ const AdminHeader = ({ sidebarOpen, setSidebarOpen }) => {
 
                                 {/* User Menu Dropdown */}
                                 {showUserMenu && (
-                                    <div className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50" dir="rtl">
-                                        <div className="p-4 border-b border-gray-200">
-                                            <p className="font-semibold text-gray-800">{user?.name}</p>
-                                            <p className="text-sm text-gray-500">{user?.email}</p>
+                                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                                        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
+                                            <div className="flex items-center gap-3">
+                                                {user?.profileImage ? (
+                                                    <img
+                                                        src={user.profileImage}
+                                                        alt={user.name}
+                                                        className="h-12 w-12 rounded-full border-2 border-blue-500 object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                                                        {user?.name?.charAt(0)}
+                                                    </div>
+                                                )}
+                                                <div className="flex-1">
+                                                    <p className="font-bold text-gray-800">{user?.name}</p>
+                                                    <p className="text-xs text-gray-600">{user?.email}</p>
+                                                    <span className="inline-block mt-1 px-2 py-0.5 bg-gradient-to-r from-red-100 to-red-200 text-red-800 text-xs font-bold rounded-full border border-red-300">
+                                                        👑 مدير النظام
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="py-2">
                                             <button
@@ -105,22 +111,22 @@ const AdminHeader = ({ sidebarOpen, setSidebarOpen }) => {
                                                     setIsUserInfoModalOpen(true);
                                                     setShowUserMenu(false);
                                                 }}
-                                                className="w-full px-4 py-2 text-right text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                                                className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-blue-50 flex items-center gap-3 transition-colors"
                                             >
-                                                <UserCircleIcon className="h-5 w-5" />
-                                                الملف الشخصي
+                                                <UserCircleIcon className="h-5 w-5 text-blue-600" />
+                                                <span className="font-medium">الملف الشخصي</span>
                                             </button>
                                         </div>
-                                        <div className="border-t border-gray-200 py-2">
+                                        <div className="border-t border-gray-200 py-2 bg-red-50">
                                             <button
                                                 onClick={() => {
                                                     setIsLogoutConfirmModalOpen(true);
                                                     setShowUserMenu(false);
                                                 }}
-                                                className="w-full px-4 py-2 text-right text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                                                className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-100 flex items-center gap-3 transition-colors font-medium"
                                             >
                                                 <LogoutIcon className="h-5 w-5" />
-                                                تسجيل الخروج
+                                                <span>تسجيل الخروج</span>
                                             </button>
                                         </div>
                                     </div>

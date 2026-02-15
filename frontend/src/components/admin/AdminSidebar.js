@@ -77,12 +77,11 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
             {/* Sidebar */}
             <aside
                 className={`
-                    fixed top-0 right-0 h-full bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 
+                    fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 
                     text-white shadow-2xl z-50 transition-all duration-300 ease-in-out
                     ${isOpen ? 'w-64' : 'w-20'}
-                    ${isOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
                 `}
-                dir="rtl"
             >
                 {/* Logo Section */}
                 <div className="flex items-center justify-center h-16 border-b border-blue-700 bg-blue-950">
@@ -148,15 +147,15 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
 
                                     {/* Tooltip for collapsed sidebar */}
                                     {!isOpen && hoveredItem === item.id && (
-                                        <div className="absolute right-full mr-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg whitespace-nowrap z-50">
+                                        <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg whitespace-nowrap z-50">
                                             {item.name}
-                                            <div className="absolute top-1/2 -right-1 transform -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
+                                            <div className="absolute top-1/2 -left-1 transform -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
                                         </div>
                                     )}
 
                                     {/* Active Indicator */}
                                     {active && (
-                                        <div className="absolute right-0 top-0 h-full w-1 bg-blue-900 rounded-l-full"></div>
+                                        <div className="absolute left-0 top-0 h-full w-1 bg-blue-900 rounded-r-full"></div>
                                     )}
                                 </Link>
                             );

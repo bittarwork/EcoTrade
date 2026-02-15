@@ -1,4 +1,4 @@
-// Admin Dashboard Home - Modern Statistics Overview
+// Admin Dashboard - Real Data from Backend
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -7,95 +7,163 @@ import {
     CollectionIcon,
     CubeIcon,
     ChatAlt2Icon,
-    TrendingUpIcon,
-    TrendingDownIcon,
     ClockIcon
 } from '@heroicons/react/outline';
-import { Line, Doughnut, Bar } from 'react-chartjs-2';
-import axios from 'axios';
+import { Doughnut } from 'react-chartjs-2';
+import { API_BASE_URL } from '../../config/api';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({
-        users: { total: 0, change: 0 },
-        orders: { total: 0, change: 0 },
-        auctions: { total: 0, change: 0 },
-        scrap: { total: 0, change: 0 },
-        messages: { total: 0, change: 0 }
+        users: { total: 0 },
+        requests: { 
+            total: 0, 
+            pending: 0, 
+            completed: 0, 
+            canceled: 0 
+        },
+        auctions: { 
+            total: 0, 
+            active: 0, 
+            closed: 0 
+        },
+        scrap: { total: 0 },
+        messages: { total: 0 }
     });
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        // Fetch dashboard statistics
-        fetchDashboardStats();
+        fetchRealStats();
     }, []);
 
-    const fetchDashboardStats = async () => {
+    const fetchRealStats = async () => {
         try {
-            // Mock data - Replace with actual API calls
-            setTimeout(() => {
-                setStats({
-                    users: { total: 245, change: 12.5 },
-                    orders: { total: 89, change: 8.2 },
-                    auctions: { total: 34, change: -3.1 },
-                    scrap: { total: 156, change: 15.7 },
-                    messages: { total: 23, change: 5.4 }
+            setLoading(true);
+            
+            // Fetch all data in parallel
+            const [usersRes, requestsRes, auctionsRes, scrapRes, messagesRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/users/users`),
+                fetch(`${API_BASE_URL}/requests/grouped`),
+                fetch(`${API_BASE_URL}/auction`),
+                fetch(`${API_BASE_URL}/scrap`),
+                fetch(`${API_BASE_URL}/messages`)
+            ]);
+
+            const usersData = await usersRes.json();
+            const requestsData = await requestsRes.json();
+            const auctionsData = await auctionsRes.json();
+            const scrapData = await scrapRes.json();
+            const messagesData = await messagesRes.json();
+
+            // Calculate request statistics
+            let totalRequests = 0;
+            let pendingRequests = 0;
+            let completedRequests = 0;
+            let canceledRequests = 0;
+
+            if (Array.isArray(requestsData)) {
+                requestsData.forEach(group => {
+                    if (group.requests && Array.isArray(group.requests)) {
+                        totalRequests += group.requests.length;
+                        group.requests.forEach(req => {
+                            if (req.status === 'completed') completedRequests++;
+                            else if (req.status === 'canceled') canceledRequests++;
+                            else pendingRequests++;
+                        });
+                    }
                 });
-                setLoading(false);
-            }, 1000);
+            }
+
+            // Calculate auction statistics
+            const activeAuctions = auctionsData.filter(a => a.status === 'open' || a.status === 'active').length;
+            const closedAuctions = auctionsData.filter(a => a.status === 'closed').length;
+
+            setStats({
+                users: { 
+                    total: usersData.users?.length || 0 
+                },
+                requests: {
+                    total: totalRequests,
+                    pending: pendingRequests,
+                    completed: completedRequests,
+                    canceled: canceledRequests
+                },
+                auctions: {
+                    total: auctionsData.length || 0,
+                    active: activeAuctions,
+                    closed: closedAuctions
+                },
+                scrap: { 
+                    total: scrapData.length || 0 
+                },
+                messages: { 
+                    total: messagesData.length || 0 
+                }
+            });
+
         } catch (error) {
-            console.error('Error fetching stats:', error);
+            console.error('Error fetching dashboard stats:', error);
+            setError('حدث خطأ في تحميل الإحصائيات');
+        } finally {
             setLoading(false);
         }
     };
 
-    const StatCard = ({ title, value, change, icon: Icon, color, link }) => (
-        <Link to={link} className="block">
+    const StatCard = ({ title, value, subtitle, icon: Icon, color, link }) => (
+        <Link to={link} className="block group">
             <div className={`bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-r-4 ${color}`}>
                 <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-lg ${color.replace('border', 'bg').replace('600', '100')}`}>
+                    <div className={`p-3 rounded-lg ${color.replace('border', 'bg').replace('600', '100')} group-hover:scale-110 transition-transform duration-300`}>
                         <Icon className={`h-8 w-8 ${color.replace('border', 'text')}`} />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {change >= 0 ? (
-                            <>
-                                <TrendingUpIcon className="h-4 w-4 text-green-500" />
-                                <span className="text-sm font-semibold text-green-500">+{change}%</span>
-                            </>
-                        ) : (
-                            <>
-                                <TrendingDownIcon className="h-4 w-4 text-red-500" />
-                                <span className="text-sm font-semibold text-red-500">{change}%</span>
-                            </>
-                        )}
                     </div>
                 </div>
                 <h3 className="text-gray-600 text-sm font-medium mb-1">{title}</h3>
                 <p className="text-3xl font-bold text-gray-800">{value.toLocaleString()}</p>
-                <p className="text-xs text-gray-500 mt-2">مقارنة بالشهر الماضي</p>
+                {subtitle && <p className="text-xs text-gray-500 mt-2">{subtitle}</p>}
             </div>
         </Link>
     );
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
                 <div className="spinner"></div>
+                <p className="text-gray-600">جاري تحميل الإحصائيات...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="bg-white rounded-xl shadow-lg p-12 text-center max-w-md">
+                    <svg className="mx-auto h-16 w-16 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{error}</h3>
+                    <button 
+                        onClick={fetchRealStats}
+                        className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        إعادة المحاولة
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6" dir="rtl">
+        <div className="space-y-6">
             {/* Welcome Section */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold mb-2">مرحباً بك في لوحة التحكم 👋</h1>
-                        <p className="text-blue-100">إليك نظرة عامة على أداء المنصة اليوم</p>
+                        <p className="text-blue-100">نظرة عامة على إحصائيات المنصة</p>
                     </div>
-                    <div className="hidden md:flex items-center gap-2 bg-white bg-opacity-20 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-2 bg-white bg-opacity-20 px-4 py-3 rounded-lg">
                         <ClockIcon className="h-5 w-5" />
-                        <span>{new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        <span className="text-sm">{new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                     </div>
                 </div>
             </div>
@@ -105,23 +173,23 @@ const AdminDashboard = () => {
                 <StatCard
                     title="إجمالي المستخدمين"
                     value={stats.users.total}
-                    change={stats.users.change}
+                    subtitle="مستخدمي المنصة"
                     icon={UsersIcon}
                     color="border-blue-600"
                     link="/users"
                 />
                 <StatCard
-                    title="الطلبات النشطة"
-                    value={stats.orders.total}
-                    change={stats.orders.change}
+                    title="إجمالي الطلبات"
+                    value={stats.requests.total}
+                    subtitle={`${stats.requests.pending} قيد المعالجة`}
                     icon={ShoppingBagIcon}
                     color="border-green-600"
                     link="/orders"
                 />
                 <StatCard
-                    title="المزادات الجارية"
+                    title="المزادات"
                     value={stats.auctions.total}
-                    change={stats.auctions.change}
+                    subtitle={`${stats.auctions.active} نشطة`}
                     icon={CollectionIcon}
                     color="border-purple-600"
                     link="/auctions"
@@ -129,15 +197,15 @@ const AdminDashboard = () => {
                 <StatCard
                     title="المواد المتاحة"
                     value={stats.scrap.total}
-                    change={stats.scrap.change}
+                    subtitle="مواد قابلة للتدوير"
                     icon={CubeIcon}
                     color="border-yellow-600"
                     link="/scrap"
                 />
                 <StatCard
-                    title="الرسائل الجديدة"
+                    title="الرسائل"
                     value={stats.messages.total}
-                    change={stats.messages.change}
+                    subtitle="رسائل العملاء"
                     icon={ChatAlt2Icon}
                     color="border-red-600"
                     link="/contact"
@@ -146,136 +214,140 @@ const AdminDashboard = () => {
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Revenue Chart */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">الإيرادات الشهرية</h2>
-                    <div className="h-64">
-                        <Line
-                            data={{
-                                labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-                                datasets: [{
-                                    label: 'الإيرادات (ل.س)',
-                                    data: [12000, 19000, 15000, 25000, 22000, 30000],
-                                    borderColor: 'rgb(59, 130, 246)',
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    tension: 0.4,
-                                    fill: true
-                                }]
-                            }}
-                            options={{
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: { display: false }
-                                },
-                                scales: {
-                                    y: { beginAtZero: true }
-                                }
-                            }}
-                        />
-                    </div>
-                </div>
-
-                {/* Order Status Distribution */}
+                {/* Request Status Distribution */}
                 <div className="bg-white rounded-xl shadow-lg p-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">توزيع حالة الطلبات</h2>
-                    <div className="h-64 flex items-center justify-center">
-                        <Doughnut
-                            data={{
-                                labels: ['مكتملة', 'قيد المعالجة', 'ملغاة'],
-                                datasets: [{
-                                    data: [65, 25, 10],
-                                    backgroundColor: [
-                                        'rgb(34, 197, 94)',
-                                        'rgb(251, 191, 36)',
-                                        'rgb(239, 68, 68)'
-                                    ],
-                                    borderWidth: 0
-                                }]
-                            }}
-                            options={{
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        position: 'bottom',
-                                        rtl: true
+                    {stats.requests.total > 0 ? (
+                        <div className="h-64 flex items-center justify-center">
+                            <Doughnut
+                                data={{
+                                    labels: ['مكتملة', 'قيد المعالجة', 'ملغاة'],
+                                    datasets: [{
+                                        data: [
+                                            stats.requests.completed, 
+                                            stats.requests.pending, 
+                                            stats.requests.canceled
+                                        ],
+                                        backgroundColor: [
+                                            'rgb(34, 197, 94)',
+                                            'rgb(251, 191, 36)',
+                                            'rgb(239, 68, 68)'
+                                        ],
+                                        borderWidth: 2,
+                                        borderColor: '#fff'
+                                    }]
+                                }}
+                                options={{
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom',
+                                            rtl: true,
+                                            labels: {
+                                                padding: 15,
+                                                font: {
+                                                    size: 12
+                                                }
+                                            }
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const label = context.label || '';
+                                                    const value = context.parsed;
+                                                    const total = stats.requests.total;
+                                                    const percentage = ((value / total) * 100).toFixed(1);
+                                                    return `${label}: ${value} (${percentage}%)`;
+                                                }
+                                            }
+                                        }
                                     }
-                                }
-                            }}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Recent Orders */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-bold text-gray-800">أحدث الطلبات</h2>
-                        <Link to="/orders" className="text-sm text-blue-600 hover:text-blue-800">
-                            عرض الكل ←
-                        </Link>
-                    </div>
-                    <div className="space-y-3">
-                        {[1, 2, 3].map((item) => (
-                            <div key={item} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                                    <ShoppingBagIcon className="h-5 w-5 text-green-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-semibold text-gray-800">طلب جديد #{1234 + item}</p>
-                                    <p className="text-xs text-gray-500">منذ {item * 5} دقائق</p>
-                                </div>
-                            </div>
-                        ))}
+                                }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="h-64 flex items-center justify-center text-gray-500">
+                            لا توجد طلبات حالياً
+                        </div>
+                    )}
+                    <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+                        <div className="p-3 bg-green-50 rounded-lg">
+                            <p className="text-2xl font-bold text-green-600">{stats.requests.completed}</p>
+                            <p className="text-xs text-gray-600">مكتملة</p>
+                        </div>
+                        <div className="p-3 bg-yellow-50 rounded-lg">
+                            <p className="text-2xl font-bold text-yellow-600">{stats.requests.pending}</p>
+                            <p className="text-xs text-gray-600">قيد المعالجة</p>
+                        </div>
+                        <div className="p-3 bg-red-50 rounded-lg">
+                            <p className="text-2xl font-bold text-red-600">{stats.requests.canceled}</p>
+                            <p className="text-xs text-gray-600">ملغاة</p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Recent Auctions */}
+                {/* Auction Status */}
                 <div className="bg-white rounded-xl shadow-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-bold text-gray-800">مزادات جديدة</h2>
-                        <Link to="/auctions" className="text-sm text-blue-600 hover:text-blue-800">
-                            عرض الكل ←
-                        </Link>
-                    </div>
-                    <div className="space-y-3">
-                        {[1, 2, 3].map((item) => (
-                            <div key={item} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                                    <CollectionIcon className="h-5 w-5 text-purple-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-semibold text-gray-800">مزاد معادن #{5678 + item}</p>
-                                    <p className="text-xs text-gray-500">منذ {item * 10} دقائق</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Recent Messages */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-bold text-gray-800">رسائل جديدة</h2>
-                        <Link to="/contact" className="text-sm text-blue-600 hover:text-blue-800">
-                            عرض الكل ←
-                        </Link>
-                    </div>
-                    <div className="space-y-3">
-                        {[1, 2, 3].map((item) => (
-                            <div key={item} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                                    <ChatAlt2Icon className="h-5 w-5 text-red-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-semibold text-gray-800">رسالة من عميل</p>
-                                    <p className="text-xs text-gray-500">منذ {item * 15} دقائق</p>
-                                </div>
-                            </div>
-                        ))}
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">حالة المزادات</h2>
+                    {stats.auctions.total > 0 ? (
+                        <div className="h-64 flex items-center justify-center">
+                            <Doughnut
+                                data={{
+                                    labels: ['نشطة', 'مغلقة'],
+                                    datasets: [{
+                                        data: [stats.auctions.active, stats.auctions.closed],
+                                        backgroundColor: [
+                                            'rgb(147, 51, 234)',
+                                            'rgb(156, 163, 175)'
+                                        ],
+                                        borderWidth: 2,
+                                        borderColor: '#fff'
+                                    }]
+                                }}
+                                options={{
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom',
+                                            rtl: true,
+                                            labels: {
+                                                padding: 15,
+                                                font: {
+                                                    size: 12
+                                                }
+                                            }
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const label = context.label || '';
+                                                    const value = context.parsed;
+                                                    const total = stats.auctions.total;
+                                                    const percentage = ((value / total) * 100).toFixed(1);
+                                                    return `${label}: ${value} (${percentage}%)`;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="h-64 flex items-center justify-center text-gray-500">
+                            لا توجد مزادات حالياً
+                        </div>
+                    )}
+                    <div className="mt-4 grid grid-cols-2 gap-4 text-center">
+                        <div className="p-3 bg-purple-50 rounded-lg">
+                            <p className="text-2xl font-bold text-purple-600">{stats.auctions.active}</p>
+                            <p className="text-xs text-gray-600">مزادات نشطة</p>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-2xl font-bold text-gray-600">{stats.auctions.closed}</p>
+                            <p className="text-xs text-gray-600">مزادات مغلقة</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -284,21 +356,21 @@ const AdminDashboard = () => {
             <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">إجراءات سريعة</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Link to="/users" className="flex flex-col items-center gap-2 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                        <UsersIcon className="h-8 w-8 text-blue-600" />
-                        <span className="text-sm font-semibold text-gray-800">إضافة مستخدم</span>
+                    <Link to="/users" className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl hover:from-blue-100 hover:to-blue-200 transition-all duration-300 transform hover:scale-105 border border-blue-200">
+                        <UsersIcon className="h-10 w-10 text-blue-600" />
+                        <span className="text-sm font-semibold text-gray-800 text-center">إدارة المستخدمين</span>
                     </Link>
-                    <Link to="/auctions" className="flex flex-col items-center gap-2 p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                        <CollectionIcon className="h-8 w-8 text-purple-600" />
-                        <span className="text-sm font-semibold text-gray-800">مزاد جديد</span>
+                    <Link to="/auctions" className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl hover:from-purple-100 hover:to-purple-200 transition-all duration-300 transform hover:scale-105 border border-purple-200">
+                        <CollectionIcon className="h-10 w-10 text-purple-600" />
+                        <span className="text-sm font-semibold text-gray-800 text-center">إدارة المزادات</span>
                     </Link>
-                    <Link to="/scrap" className="flex flex-col items-center gap-2 p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
-                        <CubeIcon className="h-8 w-8 text-yellow-600" />
-                        <span className="text-sm font-semibold text-gray-800">إضافة مادة</span>
+                    <Link to="/scrap" className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl hover:from-yellow-100 hover:to-yellow-200 transition-all duration-300 transform hover:scale-105 border border-yellow-200">
+                        <CubeIcon className="h-10 w-10 text-yellow-600" />
+                        <span className="text-sm font-semibold text-gray-800 text-center">إدارة المواد</span>
                     </Link>
-                    <Link to="/contact" className="flex flex-col items-center gap-2 p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
-                        <ChatAlt2Icon className="h-8 w-8 text-red-600" />
-                        <span className="text-sm font-semibold text-gray-800">الرسائل</span>
+                    <Link to="/contact" className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl hover:from-red-100 hover:to-red-200 transition-all duration-300 transform hover:scale-105 border border-red-200">
+                        <ChatAlt2Icon className="h-10 w-10 text-red-600" />
+                        <span className="text-sm font-semibold text-gray-800 text-center">الرسائل</span>
                     </Link>
                 </div>
             </div>
