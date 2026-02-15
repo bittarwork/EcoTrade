@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "seed": "node scripts/seed.js",
+    "seed:clear": "node scripts/seed.js --clear"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +25,7 @@
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.15",
+    "nodemon": "^3.1.11",
     "socket.io": "^4.8.0"
   }
 }

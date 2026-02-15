@@ -1,6 +1,6 @@
 // src/App.js
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Layout from './layout/Layout';
 import HomePage from './pages/HomePage';
 import OrdersPage from './pages/OrdersPage';
@@ -37,6 +37,8 @@ const App = () => {
             <Route path="/privacy-policy" element={<Privacypolicy />} />
             <Route path="/auction-room/:auctionId" element={<AuctionRoom />} />
             <Route path="/auction-room-admin/:auctionId" element={<AdminAuctionRoom />} />
+            <Route path="/admin" element={<Navigate to="/auctions" replace />} />
+            <Route path="/dashboard" element={<Navigate to="/auctions" replace />} />
           </Routes>
         </Layout>
       </Router>

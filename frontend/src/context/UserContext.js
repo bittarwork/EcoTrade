@@ -1,8 +1,10 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
 const UserContext = createContext();
-const API_URL = process.env.REACT_APP_API_URL;
+// Use centralized API config with fallback to avoid 404 when env var is undefined
+const API_URL = API_BASE_URL;
 const SESSION_DURATION = 6 * 60 * 60 * 1000;
 
 export const UserProvider = ({ children }) => {
