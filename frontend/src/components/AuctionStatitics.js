@@ -1,93 +1,272 @@
-import React from 'react';
-import { Bar, Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, Title, Tooltip, Legend, PointElement } from 'chart.js';
+// Modern Auction Statistics Component - Enhanced UI/UX
+import React, { useState } from 'react';
+import { Bar, Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
+import {
+    CollectionIcon,
+    CheckCircleIcon,
+    XCircleIcon,
+    ClockIcon,
+    TrendingUpIcon,
+    CurrencyDollarIcon,
+    ChevronDownIcon,
+    ChevronUpIcon,
+} from '@heroicons/react/outline';
 
-// تسجيل العناصر اللازمة
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, Title, Tooltip, Legend, PointElement);
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const AuctionStatistics = ({ auctions }) => {
+    const [showCharts, setShowCharts] = useState(false);
     const totalAuctions = auctions.length;
 
-    // إذا كانت المصفوفة فارغة، عرض رسالة بديلة
+    // If no auctions, show empty state
     if (totalAuctions === 0) {
         return (
-            <div className="p-5 mb-10 bg-white rounded-lg" dir='rtl'>
-                <h2 className="text-2xl font-bold mb-4">إحصائيات المزادات</h2>
-                <p className="text-lg">لا توجد مزادات متاحة حالياً.</p>
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm" dir='rtl'>
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 mb-3">
+                    <CollectionIcon className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">لا توجد إحصائيات</h3>
+                <p className="text-sm text-gray-500">ابدأ بإنشاء مزادات لعرض الإحصائيات</p>
             </div>
         );
     }
 
-    const openAuctions = auctions.filter(auction => auction.status === 'open').length;
-    const closedAuctions = totalAuctions - openAuctions;
-    const totalStartPrice = auctions.reduce((total, auction) => total + auction.startPrice, 0);
-    const averageStartPrice = (totalStartPrice / totalAuctions).toFixed(2);
-    const highestStartPrice = Math.max(...auctions.map(auction => auction.startPrice), 0);
-    const lowestStartPrice = Math.min(...auctions.map(auction => auction.startPrice), Infinity);
+    // Calculate statistics
+    const openAuctions = auctions.filter(a => a.status === 'open').length;
+    const closedAuctions = auctions.filter(a => a.status === 'closed').length;
+    const canceledAuctions = auctions.filter(a => a.status === 'canceled').length;
+    
+    const totalStartPrice = auctions.reduce((sum, a) => sum + (a.startPrice || 0), 0);
+    const averageStartPrice = totalAuctions ? (totalStartPrice / totalAuctions).toFixed(0) : 0;
+    
+    const totalCurrentBids = auctions.reduce((sum, a) => sum + (a.currentBid || a.startPrice || 0), 0);
+    const averageCurrentBid = totalAuctions ? (totalCurrentBids / totalAuctions).toFixed(0) : 0;
+    
+    const highestBid = Math.max(...auctions.map(a => a.currentBid || a.startPrice || 0), 0);
 
-    // المزادات التي ستنتهي خلال 24 ساعة
-    const auctionsEndingSoon = auctions.filter(auction =>
-        new Date(auction.endDate) - new Date() < 86400000 && auction.status === 'open'
-    ).length;
+    // Auctions ending soon (within 24 hours)
+    const endingSoonCount = auctions.filter(a => {
+        const timeLeft = new Date(a.endDate) - new Date();
+        return a.status === 'open' && timeLeft > 0 && timeLeft < 86400000;
+    }).length;
 
-    // بيانات الرسم البياني للأعمدة
-    const barChartData = {
-        labels: ['مفتوح', 'مغلق'],
-        datasets: [
-            {
-                label: 'عدد المزادات',
-                data: [openAuctions, closedAuctions],
-                backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
-            },
-        ],
+    // Category breakdown
+    const categoryStats = auctions.reduce((acc, auction) => {
+        acc[auction.category] = (acc[auction.category] || 0) + 1;
+        return acc;
+    }, {});
+
+    // Doughnut chart for status
+    const statusChartData = {
+        labels: ['نشط', 'مغلق', 'ملغي'],
+        datasets: [{
+            data: [openAuctions, closedAuctions, canceledAuctions],
+            backgroundColor: ['#10b981', '#6b7280', '#ef4444'].map(c => c + 'cc'),
+            borderColor: ['#10b981', '#6b7280', '#ef4444'],
+            borderWidth: 2,
+        }],
     };
 
-    // بيانات الرسم البياني الخطي
-    const lineChartData = {
-        labels: ['أعلى سعر', 'متوسط السعر', 'أدنى سعر'],
-        datasets: [
-            {
-                label: 'الأسعار',
-                data: [highestStartPrice, averageStartPrice, lowestStartPrice],
-                borderColor: 'rgba(54, 162, 235, 1)',
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                fill: true,
+    const statusChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 } } },
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => {
+                        const value = ctx.raw;
+                        const pct = totalAuctions ? ((value / totalAuctions) * 100).toFixed(1) : 0;
+                        return `${ctx.label}: ${value} (${pct}%)`;
+                    },
+                },
             },
-        ],
+        },
     };
+
+    // Bar chart for categories
+    const categoryLabels = Object.keys(categoryStats);
+    const categoryData = Object.values(categoryStats);
+    
+    const categoryChartData = {
+        labels: categoryLabels.map(cat => {
+            const map = {
+                'Metals': 'معادن',
+                'Plastics': 'بلاستيك',
+                'Electronics': 'إلكترونيات',
+                'Paper and Cardboard': 'ورق',
+                'Furniture': 'أثاث',
+            };
+            return map[cat] || cat;
+        }),
+        datasets: [{
+            label: 'عدد المزادات',
+            data: categoryData,
+            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+            borderWidth: 2,
+            borderRadius: 8,
+        }],
+    };
+
+    const categoryChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => `${ctx.label}: ${ctx.raw} مزاد`,
+                },
+            },
+        },
+        scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } },
+        },
+    };
+
+    const statCards = [
+        {
+            label: 'إجمالي المزادات',
+            value: totalAuctions,
+            icon: CollectionIcon,
+            bg: 'bg-blue-100',
+            text: 'text-blue-700',
+            iconColor: 'text-blue-600',
+        },
+        {
+            label: 'مزادات نشطة',
+            value: openAuctions,
+            icon: ClockIcon,
+            bg: 'bg-emerald-100',
+            text: 'text-emerald-700',
+            iconColor: 'text-emerald-600',
+        },
+        {
+            label: 'مزادات مغلقة',
+            value: closedAuctions,
+            icon: CheckCircleIcon,
+            bg: 'bg-gray-100',
+            text: 'text-gray-700',
+            iconColor: 'text-gray-600',
+        },
+        {
+            label: 'مزادات ملغاة',
+            value: canceledAuctions,
+            icon: XCircleIcon,
+            bg: 'bg-red-100',
+            text: 'text-red-700',
+            iconColor: 'text-red-600',
+        },
+    ];
+
+    const priceCards = [
+        {
+            label: 'متوسط سعر البداية',
+            value: `${Number(averageStartPrice).toLocaleString()} ل.س`,
+            icon: CurrencyDollarIcon,
+            bg: 'bg-amber-50',
+            text: 'text-amber-700',
+            iconColor: 'text-amber-600',
+        },
+        {
+            label: 'متوسط العطاءات الحالية',
+            value: `${Number(averageCurrentBid).toLocaleString()} ل.س`,
+            icon: TrendingUpIcon,
+            bg: 'bg-purple-50',
+            text: 'text-purple-700',
+            iconColor: 'text-purple-600',
+        },
+        {
+            label: 'أعلى عطاء',
+            value: `${Number(highestBid).toLocaleString()} ل.س`,
+            icon: TrendingUpIcon,
+            bg: 'bg-green-50',
+            text: 'text-green-700',
+            iconColor: 'text-green-600',
+        },
+        {
+            label: 'ينتهي خلال 24 ساعة',
+            value: endingSoonCount,
+            icon: ClockIcon,
+            bg: 'bg-orange-50',
+            text: 'text-orange-700',
+            iconColor: 'text-orange-600',
+        },
+    ];
 
     return (
-        <div className="" dir='rtl'>
-            <h2 className="text-2xl font-bold mb-4">إحصائيات المزادات</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-blue-100 p-4 rounded-lg">
-                    <p className="text-lg">إجمالي المزادات: <span className="font-semibold">{totalAuctions}</span></p>
-                    <p className="text-lg">المزادات المفتوحة: <span className="font-semibold">{openAuctions}</span></p>
-                    <p className="text-lg">المزادات المغلقة: <span className="font-semibold">{closedAuctions}</span></p>
-                    <p className="text-lg">عدد المزادات التي ستنتهي خلال 24 ساعة: <span className="font-semibold">{auctionsEndingSoon}</span></p>
-                </div>
-                <div className="bg-yellow-100 p-4 rounded-lg">
-                    <p className="text-lg">متوسط السعر الابتدائي: <span className="font-semibold">{averageStartPrice} ليرة سورية</span></p>
-                    <p className="text-lg">أعلى سعر ابتدائي: <span className="font-semibold">{highestStartPrice} ليرة سورية</span></p>
-                    <p className="text-lg">أدنى سعر ابتدائي: <span className="font-semibold">{lowestStartPrice} ليرة سورية</span></p>
-                </div>
+        <div className="space-y-4" dir='rtl'>
+            {/* Main stats grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {statCards.map(({ label, value, icon: Icon, bg, text, iconColor }) => (
+                    <div
+                        key={label}
+                        className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${bg}`}>
+                            <Icon className={`h-6 w-6 ${iconColor}`} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className={`text-xl font-bold ${text}`}>{value}</p>
+                            <p className="text-xs font-medium text-gray-500">{label}</p>
+                        </div>
+                    </div>
+                ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <h3 className="text-xl font-semibold">رسم بياني لعدد المزادات:</h3>
-                    <div className="h-64">
-                        <Bar data={barChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+
+            {/* Price stats grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {priceCards.map(({ label, value, icon: Icon, bg, text, iconColor }) => (
+                    <div
+                        key={label}
+                        className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${bg}`}>
+                                <Icon className={`h-5 w-5 ${iconColor}`} />
+                            </div>
+                        </div>
+                        <p className={`text-lg font-bold ${text} mb-1`}>{value}</p>
+                        <p className="text-xs font-medium text-gray-500">{label}</p>
                     </div>
-                </div>
-                <div>
-                    <h3 className="text-xl font-semibold">رسم بياني للأسعار:</h3>
-                    <div className="h-64">
-                        <Line data={lineChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+                ))}
+            </div>
+
+            {/* Charts (collapsible) */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <button
+                    type="button"
+                    onClick={() => setShowCharts(!showCharts)}
+                    className="flex w-full items-center justify-between py-2 text-sm font-semibold text-gray-700 hover:text-gray-900"
+                >
+                    <span>الرسوم البيانية التفصيلية</span>
+                    {showCharts ? <ChevronUpIcon className="h-5 w-5" /> : <ChevronDownIcon className="h-5 w-5" />}
+                </button>
+                
+                {showCharts && (
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Status distribution */}
+                        <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                            <h3 className="text-sm font-semibold text-gray-700 mb-3">توزيع حالات المزادات</h3>
+                            <div className="h-56">
+                                <Doughnut data={statusChartData} options={statusChartOptions} />
+                            </div>
+                        </div>
+
+                        {/* Category distribution */}
+                        <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                            <h3 className="text-sm font-semibold text-gray-700 mb-3">المزادات حسب الفئة</h3>
+                            <div className="h-56">
+                                <Bar data={categoryChartData} options={categoryChartOptions} />
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
-}
+};
 
 export default AuctionStatistics;

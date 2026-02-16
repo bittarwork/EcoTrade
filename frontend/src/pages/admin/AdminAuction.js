@@ -1,12 +1,29 @@
+// Admin Auction Management Page - Modern UI/UX with enhanced features
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Slider from 'react-slick';
 import AuctionPopup from '../../models/AuctionPopup';
+import ConfirmModal from '../../models/ConfirmModal';
 import { Link } from 'react-router-dom';
-import AuctionStatitics from '../../components/AuctionStatitics';
+import AuctionStatistics from '../../components/AuctionStatitics';
+import {
+    SearchIcon,
+    PlusIcon,
+    TrashIcon,
+    XCircleIcon,
+    CheckCircleIcon,
+    EyeIcon,
+    FilterIcon,
+    ClockIcon,
+    CurrencyDollarIcon,
+} from '@heroicons/react/outline';
+import { CheckCircleIcon as CheckSolid, XCircleIcon as XSolid } from '@heroicons/react/solid';
+
 const AdminAuction = () => {
     const [auctions, setAuctions] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all'); // all, open, closed, canceled
+    const [categoryFilter, setCategoryFilter] = useState('all');
     const [newAuction, setNewAuction] = useState({
         itemName: '',
         description: '',
@@ -16,17 +33,49 @@ const AdminAuction = () => {
         images: []
     });
     const [showPopup, setShowPopup] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(null);
+    const [toast, setToast] = useState({ show: false, message: '', type: '' });
+    
+    // Confirmation modal state
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        type: 'danger',
+        title: '',
+        message: '',
+        action: null,
+        auctionId: null,
+    });
 
     useEffect(() => {
         fetchAuctions();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Auto-hide toast after 4 seconds
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast({ show: false, message: '', type: '' });
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
+
+    const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     const fetchAuctions = async () => {
         try {
+            setLoading(true);
             const response = await axios.get(`${process.env.REACT_APP_API_URL}/auction`);
             setAuctions(response.data);
         } catch (error) {
             console.error("Error fetching auctions:", error);
+            showToast('فشل تحميل المزادات', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -64,12 +113,15 @@ const AdminAuction = () => {
                 images: []
             });
             closePopup();
+            showToast('تم إنشاء المزاد بنجاح');
         } catch (error) {
             console.error("Error creating auction:", error);
+            showToast('فشل إنشاء المزاد', 'error');
         }
     };
 
     const cancelAuction = async (auctionId) => {
+        setActionLoading(auctionId);
         const updatedAuctions = auctions.map(auction => {
             if (auction._id === auctionId) {
                 return { ...auction, status: 'canceled' };
@@ -80,12 +132,19 @@ const AdminAuction = () => {
 
         try {
             await axios.put(`${process.env.REACT_APP_API_URL}/auction/cancel/${auctionId}`);
+            showToast('تم إلغاء المزاد بنجاح');
         } catch (error) {
             console.error("Error cancelling auction:", error);
+            showToast('فشل إلغاء المزاد', 'error');
+            fetchAuctions();
+        } finally {
+            setActionLoading(null);
+            closeConfirmModal();
         }
     };
 
     const closeAuction = async (auctionId) => {
+        setActionLoading(auctionId);
         const updatedAuctions = auctions.map(auction => {
             if (auction._id === auctionId) {
                 return { ...auction, status: 'closed' };
@@ -96,28 +155,67 @@ const AdminAuction = () => {
 
         try {
             await axios.put(`${process.env.REACT_APP_API_URL}/auction/close/${auctionId}`);
+            showToast('تم إغلاق المزاد بنجاح');
         } catch (error) {
             console.error("Error closing auction:", error);
+            showToast('فشل إغلاق المزاد', 'error');
+            fetchAuctions();
+        } finally {
+            setActionLoading(null);
+            closeConfirmModal();
         }
     };
 
     const deleteAuction = async (auctionId) => {
+        setActionLoading(auctionId);
         try {
             await axios.delete(`${process.env.REACT_APP_API_URL}/auction/${auctionId}`);
             fetchAuctions();
+            showToast('تم حذف المزاد بنجاح');
         } catch (error) {
             console.error("Error deleting auction:", error);
+            showToast('فشل حذف المزاد', 'error');
+        } finally {
+            setActionLoading(null);
+            closeConfirmModal();
         }
     };
 
     const openPopup = () => setShowPopup(true);
     const closePopup = () => setShowPopup(false);
 
-    const filteredAuctions = auctions.filter(auction =>
-        auction.itemName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Confirmation modal handlers
+    const openConfirmModal = (type, title, message, action, auctionId) => {
+        setConfirmModal({ isOpen: true, type, title, message, action, auctionId });
+    };
 
-    const settings = {
+    const closeConfirmModal = () => {
+        if (actionLoading) return;
+        setConfirmModal({ 
+            isOpen: false, 
+            type: 'danger', 
+            title: '', 
+            message: '', 
+            action: null, 
+            auctionId: null 
+        });
+    };
+
+    const handleConfirmAction = () => {
+        if (confirmModal.action && confirmModal.auctionId) {
+            confirmModal.action(confirmModal.auctionId);
+        }
+    };
+
+    // Filter auctions by search, status, and category
+    const filteredAuctions = auctions.filter(auction => {
+        const matchesSearch = auction.itemName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === 'all' || auction.status === statusFilter;
+        const matchesCategory = categoryFilter === 'all' || auction.category === categoryFilter;
+        return matchesSearch && matchesStatus && matchesCategory;
+    });
+
+    const sliderSettings = {
         dots: true,
         infinite: true,
         speed: 500,
@@ -127,72 +225,253 @@ const AdminAuction = () => {
         autoplaySpeed: 3000,
     };
 
+    // Get time remaining
+    const getTimeRemaining = (endDate) => {
+        const now = new Date();
+        const end = new Date(endDate);
+        const diff = end - now;
+        
+        if (diff <= 0) return 'انتهى';
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        
+        if (days > 0) return `${days} يوم`;
+        return `${hours} ساعة`;
+    };
 
-    const AuctionCard = ({ auction, onCancel, onClose, onDelete }) => (
-        <div className={`border p-4 rounded-lg shadow-lg transition-all duration-300 
-            ${auction.status === 'canceled' ? 'bg-red-100' : auction.status === 'closed' ? 'bg-gray-100' : 'bg-white hover:shadow-xl'}`} dir='rtl'>
-            <div className='mb-5'>
-                <Slider {...settings}>
-                    {auction.images.map((image, index) => (
-                        <div key={index}>
-                            <img src={image} alt={auction.itemName} className="w-full h-48 object-cover mb-2 rounded-lg" />
+    const AuctionCard = ({ auction }) => {
+        const isCanceled = auction.status === 'canceled';
+        const isClosed = auction.status === 'closed';
+        const isOpen = auction.status === 'open';
+        const isLoading = actionLoading === auction._id;
+        const timeRemaining = getTimeRemaining(auction.endDate);
+        const isEndingSoon = timeRemaining !== 'انتهى' && new Date(auction.endDate) - new Date() < 86400000;
+
+        return (
+            <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 ${
+                isCanceled ? 'border-red-200 bg-red-50/50' : 
+                isClosed ? 'border-gray-200 bg-gray-50/50' : 
+                'border-gray-200 bg-white hover:shadow-xl'
+            }`} dir='rtl'>
+                {/* Status badge on top */}
+                <div className="absolute top-3 left-3 z-10">
+                    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        isCanceled ? 'bg-red-100 text-red-800' : 
+                        isClosed ? 'bg-gray-100 text-gray-800' : 
+                        'bg-emerald-100 text-emerald-800'
+                    }`}>
+                        {isCanceled ? <XSolid className="h-3.5 w-3.5" /> : 
+                         isClosed ? <CheckSolid className="h-3.5 w-3.5" /> : 
+                         <ClockIcon className="h-3.5 w-3.5" />}
+                        {isCanceled ? 'ملغى' : isClosed ? 'مغلق' : 'نشط'}
+                    </span>
+                </div>
+
+                {/* Image slider */}
+                <div className='relative'>
+                    <Slider {...sliderSettings}>
+                        {auction.images.map((image, index) => (
+                            <div key={index}>
+                                <img 
+                                    src={image} 
+                                    alt={auction.itemName} 
+                                    className="w-full h-56 object-cover" 
+                                />
+                            </div>
+                        ))}
+                    </Slider>
+                    {isEndingSoon && isOpen && (
+                        <div className="absolute bottom-2 right-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                            ينتهي قريباً!
                         </div>
-                    ))}
-                </Slider>
+                    )}
+                </div>
+
+                {/* Content */}
+                <div className="p-5">
+                    <h3 className="font-bold text-xl mb-2 text-gray-800 line-clamp-1">{auction.itemName}</h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{auction.description}</p>
+                    
+                    {/* Info grid */}
+                    <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
+                        <div className="bg-gray-50 rounded-lg p-2">
+                            <p className="text-gray-500 text-xs">الفئة</p>
+                            <p className="font-semibold text-gray-800">{auction.category}</p>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-2">
+                            <p className="text-gray-500 text-xs">سعر البداية</p>
+                            <p className="font-semibold text-blue-700">{auction.startPrice} ل.س</p>
+                        </div>
+                        <div className="bg-emerald-50 rounded-lg p-2">
+                            <p className="text-gray-500 text-xs">العطاء الحالي</p>
+                            <p className="font-semibold text-emerald-700">{auction.currentBid || auction.startPrice} ل.س</p>
+                        </div>
+                        <div className="bg-amber-50 rounded-lg p-2">
+                            <p className="text-gray-500 text-xs">الوقت المتبقي</p>
+                            <p className="font-semibold text-amber-700">{timeRemaining}</p>
+                        </div>
+                    </div>
+
+                    <div className="text-xs text-gray-500 mb-4">
+                        تاريخ الانتهاء: {new Date(auction.endDate).toLocaleDateString('ar-EG', { 
+                            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                        })}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="space-y-2">
+                        <Link 
+                            to={`/auction-room-admin/${auction._id}`} 
+                            className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white px-4 py-2.5 rounded-xl hover:bg-blue-700 transition text-sm font-medium"
+                        >
+                            <EyeIcon className="h-4 w-4" />
+                            عرض تفاصيل المزاد
+                        </Link>
+                        
+                        <div className="grid grid-cols-3 gap-2">
+                            <button 
+                                className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition ${
+                                    isCanceled || isLoading ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-red-500 text-white hover:bg-red-600'
+                                }`}
+                                onClick={() => openConfirmModal(
+                                    'cancel',
+                                    'إلغاء المزاد',
+                                    `هل أنت متأكد من إلغاء مزاد "${auction.itemName}"؟`,
+                                    cancelAuction,
+                                    auction._id
+                                )}
+                                disabled={isCanceled || isLoading}
+                            >
+                                <XCircleIcon className="h-4 w-4" />
+                                إلغاء
+                            </button>
+                            <button
+                                className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition ${
+                                    isCanceled || isClosed || isLoading ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                }`}
+                                onClick={() => openConfirmModal(
+                                    'success',
+                                    'إغلاق المزاد',
+                                    `سيتم إغلاق مزاد "${auction.itemName}" وتحديد الفائز. هل تريد المتابعة؟`,
+                                    closeAuction,
+                                    auction._id
+                                )}
+                                disabled={isCanceled || isClosed || isLoading}
+                            >
+                                <CheckCircleIcon className="h-4 w-4" />
+                                إغلاق
+                            </button>
+                            <button 
+                                className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-xs font-medium"
+                                onClick={() => openConfirmModal(
+                                    'danger',
+                                    'حذف المزاد',
+                                    `سيتم حذف مزاد "${auction.itemName}" نهائياً. هل أنت متأكد؟`,
+                                    deleteAuction,
+                                    auction._id
+                                )}
+                                disabled={isLoading}
+                            >
+                                <TrashIcon className="h-4 w-4" />
+                                حذف
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <h3 className="font-bold text-xl mb-2">{auction.itemName}</h3>
-            <p className="text-gray-700 mb-2">{auction.description}</p>
-            <p className="mb-1"><strong>الفئة:</strong> {auction.category}</p>
-            <p className="mb-1"><strong>سعر البداية:</strong> {auction.startPrice} ل.س</p>
-            <p className="mb-1"><strong>العطاء الحالي:</strong> {auction.currentBid} ل.س</p>
-            <p className="mb-2"><strong>تاريخ انتهاء المزاد:</strong> {new Date(auction.endDate).toLocaleString()}</p>
-            <p className={`text-sm font-semibold ${auction.status === 'canceled' ? 'text-red-600' : auction.status === 'closed' ? 'text-gray-600' : 'text-green-600'}`}>
-                الحالة: {auction.status === 'canceled' ? 'ملغى' : auction.status === 'closed' ? 'مغلق' : 'نشط'}
-            </p>
-            <div className='h-0.5 w-full bg-black bg-opacity-10 mt-2'></div>
-            <div className="flex justify-between mt-4">
-                <button className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition duration-200" onClick={() => onCancel(auction._id)}>
-                    إلغاء المزاد
-                </button>
-                <button
-                    className={`p-2 rounded-lg transition duration-200 ${auction.status === 'canceled' ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-                    onClick={() => onClose(auction._id)}
-                    disabled={auction.status === 'canceled'}
-                >
-                    إغلاق المزاد
-                </button>
-                <button className="p-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition duration-200" onClick={() => onDelete(auction._id)}>
-                    حذف المزاد
-                </button>
-            </div>
-            {/* زر الانتقال إلى تفاصيل المزاد */}
-            <Link to={`/auction-room-admin/${auction._id}`} className="block mt-4 p-2 text-center bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200 w-full">
-                عرض تفاصيل المزاد
-            </Link>
-        </div>
-    );
+        );
+    };
 
     return (
-        <div className="">
-            <h1 className="text-4xl font-bold mb-6 text-center text-gray-800">إدارة المزادات</h1>
-            <AuctionStatitics auctions={auctions}></AuctionStatitics>
-            <div className="flex justify-between mb-4">
-                <div className="flex-grow mr-2">
-                    <input
-                        type="text"
-                        placeholder="ابحث حسب الاسم"
-                        className="border border-gray-300 rounded-lg p-3 w-full"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+        <div className="space-y-6" dir="rtl">
+            {/* Toast notification */}
+            {toast.show && (
+                <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border animate-fadeIn ${
+                    toast.type === 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                }`}>
+                    {toast.type === 'error' ? (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    ) : (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    )}
+                    <span className="font-medium">{toast.message}</span>
                 </div>
-                <button
-                    onClick={openPopup}
-                    className="bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition duration-200">
-                    إضافة مزاد جديد
-                </button>
+            )}
+
+            {/* Page header */}
+            <div className="mb-6">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">إدارة المزادات</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                    إضافة وإدارة وتتبع المزادات في المنصة
+                </p>
             </div>
 
+            {/* Statistics */}
+            <AuctionStatistics auctions={auctions} />
+
+            {/* Search and filters */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                <div className="flex flex-col gap-3">
+                    {/* Search and add button */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="relative flex-1">
+                            <SearchIcon className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="ابحث عن مزاد..."
+                                className="w-full rounded-xl border border-gray-300 py-2.5 pr-10 pl-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <button
+                            onClick={openPopup}
+                            className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-700 transition font-medium text-sm shadow-sm"
+                        >
+                            <PlusIcon className="h-5 w-5" />
+                            إضافة مزاد جديد
+                        </button>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <FilterIcon className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-600 font-medium">الحالة:</span>
+                        {['all', 'open', 'closed', 'canceled'].map(status => (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                                    statusFilter === status ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                {status === 'all' ? 'الكل' : status === 'open' ? 'نشط' : status === 'closed' ? 'مغلق' : 'ملغي'}
+                            </button>
+                        ))}
+                        
+                        <span className="text-sm text-gray-600 font-medium ml-3">الفئة:</span>
+                        {['all', 'Metals', 'Plastics', 'Electronics', 'Paper and Cardboard', 'Furniture'].map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setCategoryFilter(cat)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                                    categoryFilter === cat ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                {cat === 'all' ? 'الكل' : cat === 'Metals' ? 'معادن' : cat === 'Plastics' ? 'بلاستيك' : 
+                                 cat === 'Electronics' ? 'إلكترونيات' : cat === 'Paper and Cardboard' ? 'ورق وكرتون' : 'أثاث'}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Popup */}
             {showPopup && (
                 <AuctionPopup
                     newAuction={newAuction}
@@ -203,9 +482,35 @@ const AdminAuction = () => {
                 />
             )}
 
-            {filteredAuctions.length === 0 ? (
-                <div className="text-center text-gray-500 p-4 border border-gray-300 rounded-lg">
-                    <p>لا توجد مزادات متاحة حالياً.</p>
+            {/* Confirmation Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={closeConfirmModal}
+                onConfirm={handleConfirmAction}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                loading={!!actionLoading}
+                confirmText={confirmModal.type === 'danger' ? 'حذف' : confirmModal.type === 'cancel' ? 'إلغاء المزاد' : 'إغلاق المزاد'}
+            />
+
+            {/* Auctions grid */}
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                    <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+                    <p className="text-sm font-medium">جاري تحميل المزادات...</p>
+                </div>
+            ) : filteredAuctions.length === 0 ? (
+                <div className="text-center p-12 border border-gray-200 rounded-2xl bg-white shadow-sm">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 mb-4">
+                        <CurrencyDollarIcon className="h-10 w-10 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">لا توجد مزادات</h3>
+                    <p className="text-sm text-gray-500">
+                        {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all' 
+                            ? 'لا توجد نتائج تطابق البحث أو التصفية.' 
+                            : 'لم يتم إنشاء أي مزادات بعد.'}
+                    </p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -213,9 +518,6 @@ const AdminAuction = () => {
                         <AuctionCard
                             key={auction._id}
                             auction={auction}
-                            onCancel={cancelAuction}
-                            onClose={closeAuction}
-                            onDelete={deleteAuction}
                         />
                     ))}
                 </div>
