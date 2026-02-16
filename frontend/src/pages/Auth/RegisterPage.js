@@ -1,20 +1,51 @@
 import React, { useState, useContext } from 'react';
 import UserContext from '../../context/UserContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { UserIcon, MailIcon, LockClosedIcon, PhotographIcon, EyeIcon, EyeOffIcon } from '@heroicons/react/outline';
 
 const RegisterPage = () => {
     const { registerUser } = useContext(UserContext);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState(''); // إضافة حقل التأكيد
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
-    const [error, setError] = useState(null); // حالة لتخزين الخطأ
+    const [imagePreview, setImagePreview] = useState(null);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setProfileImage(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleRegister = async (e) => {
         e.preventDefault();
-        setError(null); // إعادة تعيين الخطأ عند بدء التسجيل
+        setError(null);
+        
+        // Validate password match
+        if (password !== confirmPassword) {
+            setError('كلمات المرور غير متطابقة.');
+            return;
+        }
+
+        // Validate password strength
+        if (password.length < 6) {
+            setError('يجب أن تكون كلمة المرور 6 أحرف على الأقل.');
+            return;
+        }
+
+        setLoading(true);
         const formData = new FormData();
         formData.append('name', name);
         formData.append('email', email);
@@ -23,71 +54,211 @@ const RegisterPage = () => {
             formData.append('profileImage', profileImage);
         }
 
-        // تحقق من تطابق كلمة المرور
-        if (password !== confirmPassword) {
-            setError('كلمات المرور غير متطابقة.');
-            return;
-        }
-
         try {
             await registerUser(formData);
-            navigate('/login'); // إعادة التوجيه إلى صفحة تسجيل الدخول بعد التسجيل
+            navigate('/login');
         } catch (error) {
-            // عرض رسالة الخطأ من الخادم
             setError(error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div className="flex flex-col items-center justify-center mt-10">
-            <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
-                <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">تسجيل حساب جديد</h2>
-                {error && <p className="text-red-500 mb-4">{error}</p>} {/* عرض الخطأ هنا */}
-                <form onSubmit={handleRegister} className="flex flex-col">
-                    <input
-                        type="text"
-                        placeholder="الاسم"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        className="mb-4 border border-gray-300 p-2 rounded transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                    <input
-                        type="email"
-                        placeholder="البريد الإلكتروني"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="mb-4 border border-gray-300 p-2 rounded transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                    <input
-                        type="password"
-                        placeholder="كلمة المرور"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="mb-4 border border-gray-300 p-2 rounded transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                    <input
-                        type="password"
-                        placeholder="تأكيد كلمة المرور"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        className="mb-6 border border-gray-300 p-2 rounded transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                    <input
-                        type="file"
-                        onChange={(e) => setProfileImage(e.target.files[0])}
-                        className="mb-6 border border-gray-300 p-2 rounded"
-                    />
-                    <button type="submit" className="bg-green-600 text-white py-2 rounded hover:bg-green-500 transition duration-200">
-                        تسجيل
-                    </button>
-                </form>
-                <p className="mt-4 text-center text-gray-600">
-                    لديك حساب بالفعل؟ <a href="/login" className="text-blue-600 hover:underline">تسجيل الدخول</a>
-                </p>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-teal-50 py-12 px-4" dir="rtl">
+            <div className="w-full max-w-md">
+                {/* Header Section */}
+                <div className="text-center mb-8">
+                    <div className="inline-block p-4 bg-green-600 rounded-full shadow-lg mb-4">
+                        <UserIcon className="w-12 h-12 text-white" />
+                    </div>
+                    <h1 className="text-4xl font-bold text-gray-800 mb-2">إنشاء حساب جديد</h1>
+                    <p className="text-gray-600">انضم إلينا وابدأ رحلتك في إعادة التدوير</p>
+                </div>
+
+                {/* Register Form Card */}
+                <div className="bg-white rounded-2xl shadow-2xl p-8">
+                    {error && (
+                        <div className="mb-6 bg-red-50 border-r-4 border-red-600 p-4 rounded-lg">
+                            <div className="flex items-center">
+                                <svg className="w-6 h-6 text-red-600 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p className="text-red-800">{error}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleRegister} className="space-y-6">
+                        {/* Profile Image Upload */}
+                        <div className="flex flex-col items-center">
+                            <div className="relative">
+                                <div className="w-32 h-32 rounded-full border-4 border-green-500 overflow-hidden bg-gray-100 flex items-center justify-center">
+                                    {imagePreview ? (
+                                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <PhotographIcon className="w-16 h-16 text-gray-400" />
+                                    )}
+                                </div>
+                                <label className="absolute bottom-0 right-0 bg-green-600 rounded-full p-2 cursor-pointer hover:bg-green-700 transition-colors shadow-lg">
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-2">صورة الملف الشخصي (اختياري)</p>
+                        </div>
+
+                        {/* Name Input */}
+                        <div>
+                            <label className="block text-gray-700 font-medium mb-2">الاسم الكامل</label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <UserIcon className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="أدخل اسمك الكامل"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                    className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Email Input */}
+                        <div>
+                            <label className="block text-gray-700 font-medium mb-2">البريد الإلكتروني</label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <MailIcon className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type="email"
+                                    placeholder="example@email.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Password Input */}
+                        <div>
+                            <label className="block text-gray-700 font-medium mb-2">كلمة المرور</label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="6 أحرف على الأقل"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="w-full pr-10 pl-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 left-0 pl-3 flex items-center"
+                                >
+                                    {showPassword ? (
+                                        <EyeOffIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                                    ) : (
+                                        <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Confirm Password Input */}
+                        <div>
+                            <label className="block text-gray-700 font-medium mb-2">تأكيد كلمة المرور</label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    placeholder="أعد إدخال كلمة المرور"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                    className="w-full pr-10 pl-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute inset-y-0 left-0 pl-3 flex items-center"
+                                >
+                                    {showConfirmPassword ? (
+                                        <EyeOffIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                                    ) : (
+                                        <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-teal-700 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        >
+                            {loading ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    جاري إنشاء الحساب...
+                                </>
+                            ) : (
+                                <>
+                                    <UserIcon className="w-5 h-5 ml-2" />
+                                    إنشاء حساب
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    {/* Divider */}
+                    <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-4 bg-white text-gray-500">أو</span>
+                        </div>
+                    </div>
+
+                    {/* Login Link */}
+                    <div className="text-center">
+                        <p className="text-gray-600">
+                            لديك حساب بالفعل؟{' '}
+                            <Link to="/login" className="text-green-600 font-semibold hover:text-green-700 hover:underline transition-colors">
+                                تسجيل الدخول
+                            </Link>
+                        </p>
+                    </div>
+                </div>
+
+                {/* Additional Links */}
+                <div className="mt-6 text-center space-y-2">
+                    <Link to="/" className="block text-gray-600 hover:text-green-600 transition-colors">
+                        العودة إلى الصفحة الرئيسية
+                    </Link>
+                </div>
             </div>
         </div>
     );

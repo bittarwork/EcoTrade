@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { UserIcon, LoginIcon, LogoutIcon, MenuIcon, XIcon } from '@heroicons/react/solid'; // إضافة أيقونة X للإغلاق
+import { Link, useLocation } from 'react-router-dom';
+import { UserIcon, LoginIcon, LogoutIcon, MenuIcon, XIcon, HomeIcon, ShoppingBagIcon, ChartBarIcon, UsersIcon, CollectionIcon } from '@heroicons/react/solid';
 import UserContext from '../context/UserContext';
 import UserInfoModal from '../models/UserInfoModal';
 import LogoutConfirmModal from '../models/LogoutConfirmModal';
@@ -11,133 +11,268 @@ const Header = () => {
     const [isUserInfoModalOpen, setIsUserInfoModalOpen] = useState(false);
     const [isLogoutConfirmModalOpen, setIsLogoutConfirmModalOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const location = useLocation();
 
     const handleLogout = () => {
         logoutUser();
         setIsLogoutConfirmModalOpen(false);
     };
 
+    const isActive = (path) => {
+        return location.pathname === path;
+    };
+
+    const NavLink = ({ to, icon: Icon, children }) => {
+        const active = isActive(to);
+        return (
+            <Link 
+                to={to} 
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+                    active 
+                        ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg' 
+                        : 'text-gray-700 hover:bg-green-50 hover:text-green-600'
+                }`}
+            >
+                <Icon className="w-5 h-5" />
+                <span className="font-medium">{children}</span>
+            </Link>
+        );
+    };
+
     return (
-        <header className="placeholder-gray-100- shadow-md">
-            <nav className="container mx-auto px-6 py-4 flex items-center justify-between">
-                {/* اللوغو على اليسار */}
-                <div className="flex items-center space-x-2">
-                    <Link to="/" className="flex items-center">
-                        <img src={logo} alt="Logo" className="h-10 w-auto" />
-                        <span className="text-2xl font-bold text-gray-700">EcoTrade</span>
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-100">
+            <nav className="container mx-auto px-6 py-4">
+                <div className="flex items-center justify-between">
+                    {/* Logo Section - Enhanced */}
+                    <Link to="/" className="flex items-center gap-3 group">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl blur-lg opacity-0 group-hover:opacity-30 transition-opacity"></div>
+                            <img src={logo} alt="EcoTrade Logo" className="relative h-12 w-auto transform group-hover:scale-110 transition-transform" />
+                        </div>
+                        <div className="hidden sm:block">
+                            <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                                EcoTrade
+                            </h1>
+                            <p className="text-xs text-gray-500">إعادة تدوير ذكية</p>
+                        </div>
                     </Link>
-                </div>
 
-                {/* الروابط في الوسط */}
-                <div className="hidden md:flex items-center space-x-8 ">
-                    {user ? (<>                    <Link to="/" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">الصفحة الرئيسية</Link>
-                        <Link to="/orders" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">صفحة الطلبات</Link>
-                        <Link to="/auctions" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">صفحة المزادات</Link>
-                        {user ? user.role === "admin" ? (<Link to="/users" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">ادارة المستخدمين</Link>) : "" : ""}
-                        {user ? user.role === "admin" ? (<Link to="/scrap" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">ادارة المواد</Link>) : "" : ""}</>) : ""}
-                </div>
+                    {/* Desktop Navigation Links */}
+                    <div className="hidden md:flex items-center gap-2">
+                        {user ? (
+                            <>
+                                <NavLink to="/" icon={HomeIcon}>الرئيسية</NavLink>
+                                <NavLink to="/orders" icon={ShoppingBagIcon}>الطلبات</NavLink>
+                                <NavLink to="/auctions" icon={ChartBarIcon}>المزادات</NavLink>
+                                {user.role === "admin" && (
+                                    <>
+                                        <NavLink to="/users" icon={UsersIcon}>المستخدمين</NavLink>
+                                        <NavLink to="/scrap" icon={CollectionIcon}>المواد</NavLink>
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <NavLink to="/" icon={HomeIcon}>الرئيسية</NavLink>
+                        )}
+                    </div>
 
-
-                {/* الأزرار على اليمين */}
-                <div className="hidden md:flex items-center space-x-4">
-                    {user ? (
-                        <>
-                            <button
-                                onClick={() => setIsUserInfoModalOpen(true)}
-                                className="flex items-center justify-center bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition"
-                            >
-                                <UserIcon className="w-5 h-5 mr-2 text-gray-600" />
-                                {user.name}
-                            </button>
-                            <button
-                                onClick={() => setIsLogoutConfirmModalOpen(true)}
-                                className="flex items-center justify-center bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-500 transition"
-                            >
-                                <LogoutIcon className="w-5 h-5 mr-2" />
-                                تسجيل الخروج
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <Link
-                                to="/login"
-                                className="flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-500 transition"
-                            >
-                                <LoginIcon className="w-5 h-5 mr-2" />
-                                تسجيل الدخول
-                            </Link>
-                            <Link
-                                to="/register"
-                                className="flex items-center justify-center bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-500 transition"
-                            >
-                                <UserIcon className="w-5 h-5 mr-2" />
-                                تسجيل حساب جديد
-                            </Link>
-                        </>
-                    )}
-                </div>
-
-                {/* زر القائمة للأجهزة الصغيرة */}
-                <button
-                    className={`md:hidden sm:hidden text-black focus:outline-non ${isMenuOpen ? "hidden" : ""}`}
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                >
-                    <MenuIcon className="w-6 h-6" />
-                </button>
-
-                {/* القائمة المنسدلة للأجهزة الصغيرة */}
-                <div className={`mt-4 md:hidden ${isMenuOpen ? 'block' : 'hidden'} w-full rounded-lg `}>
-                    <button
-                        className="absolute top-2 right-2 p-1 text-gray-800 hover:bg-gray-200 rounded-full"
-                        onClick={() => setIsMenuOpen(false)}
-                    >
-                        <XIcon className="w-6 h-6" />
-                    </button>
-                    <div className="flex flex-col items-center text-center space-y-4 text-gray-700 py-4">
-                        {user ? (<>                    <Link to="/" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">الصفحة الرئيسية</Link>
-                            <Link to="/orders" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">صفحة الطلبات</Link>
-                            <Link to="/auctions" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">صفحة المزادات</Link>
-                            {user ? user.role === "admin" ? (<Link to="/users" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">ادارة المستخدمين</Link>) : "" : ""}
-                            {user ? user.role === "admin" ? (<Link to="/scrap" className="text-gray-700 hover:text-gray-900 hover:shadow-sm">ادارة المواد</Link>) : "" : ""}</>) : ""}
+                    {/* Desktop Action Buttons - Enhanced */}
+                    <div className="hidden md:flex items-center gap-3">
                         {user ? (
                             <>
                                 <button
                                     onClick={() => setIsUserInfoModalOpen(true)}
-                                    className="flex items-center justify-center bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all shadow-md"
                                 >
-                                    <UserIcon className="w-5 h-5 mr-2 text-gray-600" />
-                                    {user.name}
+                                    <UserIcon className="w-5 h-5 text-green-600" />
+                                    <span className="font-medium">{user.name}</span>
                                 </button>
                                 <button
                                     onClick={() => setIsLogoutConfirmModalOpen(true)}
-                                    className="flex items-center justify-center bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-500 transition"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-xl hover:from-red-700 hover:to-red-600 transition-all shadow-lg transform hover:scale-105"
                                 >
-                                    <LogoutIcon className="w-5 h-5 mr-2" />
-                                    تسجيل الخروج
+                                    <LogoutIcon className="w-5 h-5" />
+                                    <span className="font-medium">خروج</span>
                                 </button>
                             </>
                         ) : (
                             <>
                                 <Link
                                     to="/login"
-                                    className="flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-500 transition"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg transform hover:scale-105"
                                 >
-                                    <LoginIcon className="w-5 h-5 mr-2" />
-                                    تسجيل الدخول
+                                    <LoginIcon className="w-5 h-5" />
+                                    <span className="font-medium">دخول</span>
                                 </Link>
                                 <Link
                                     to="/register"
-                                    className="flex items-center justify-center bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-500 transition"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl hover:from-green-700 hover:to-teal-700 transition-all shadow-lg transform hover:scale-105"
                                 >
-                                    <UserIcon className="w-5 h-5 mr-2" />
-                                    تسجيل حساب جديد
+                                    <UserIcon className="w-5 h-5" />
+                                    <span className="font-medium">حساب جديد</span>
                                 </Link>
                             </>
                         )}
                     </div>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                        className={`md:hidden p-2 rounded-xl bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg ${isMenuOpen ? "hidden" : ""}`}
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    >
+                        <MenuIcon className="w-6 h-6" />
+                    </button>
                 </div>
+
+                {/* Mobile Menu - Enhanced */}
+                {isMenuOpen && (
+                    <div className="md:hidden fixed inset-0 bg-white z-50 overflow-y-auto">
+                        <div className="flex flex-col h-full">
+                            {/* Mobile Menu Header */}
+                            <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-green-50 to-teal-50">
+                                <div className="flex items-center gap-3">
+                                    <img src={logo} alt="Logo" className="h-10 w-auto" />
+                                    <div>
+                                        <h2 className="text-xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                                            EcoTrade
+                                        </h2>
+                                        <p className="text-xs text-gray-500">إعادة تدوير ذكية</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="p-2 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-xl hover:from-red-700 hover:to-red-600 transition-all"
+                                >
+                                    <XIcon className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            {/* Mobile Menu Links */}
+                            <div className="flex-1 px-6 py-8 space-y-2">
+                                {user ? (
+                                    <>
+                                        <Link 
+                                            to="/" 
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                                                isActive('/') 
+                                                    ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg' 
+                                                    : 'bg-gray-50 text-gray-700 hover:bg-green-50'
+                                            }`}
+                                        >
+                                            <HomeIcon className="w-6 h-6" />
+                                            <span className="font-medium">الصفحة الرئيسية</span>
+                                        </Link>
+                                        <Link 
+                                            to="/orders" 
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                                                isActive('/orders') 
+                                                    ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg' 
+                                                    : 'bg-gray-50 text-gray-700 hover:bg-green-50'
+                                            }`}
+                                        >
+                                            <ShoppingBagIcon className="w-6 h-6" />
+                                            <span className="font-medium">صفحة الطلبات</span>
+                                        </Link>
+                                        <Link 
+                                            to="/auctions" 
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                                                isActive('/auctions') 
+                                                    ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg' 
+                                                    : 'bg-gray-50 text-gray-700 hover:bg-green-50'
+                                            }`}
+                                        >
+                                            <ChartBarIcon className="w-6 h-6" />
+                                            <span className="font-medium">صفحة المزادات</span>
+                                        </Link>
+                                        {user.role === "admin" && (
+                                            <>
+                                                <Link 
+                                                    to="/users" 
+                                                    onClick={() => setIsMenuOpen(false)}
+                                                    className="flex items-center gap-3 px-4 py-3 bg-gray-50 text-gray-700 rounded-xl hover:bg-green-50 transition-all"
+                                                >
+                                                    <UsersIcon className="w-6 h-6" />
+                                                    <span className="font-medium">إدارة المستخدمين</span>
+                                                </Link>
+                                                <Link 
+                                                    to="/scrap" 
+                                                    onClick={() => setIsMenuOpen(false)}
+                                                    className="flex items-center gap-3 px-4 py-3 bg-gray-50 text-gray-700 rounded-xl hover:bg-green-50 transition-all"
+                                                >
+                                                    <CollectionIcon className="w-6 h-6" />
+                                                    <span className="font-medium">إدارة المواد</span>
+                                                </Link>
+                                            </>
+                                        )}
+                                        
+                                        <div className="pt-6 mt-6 border-t space-y-2">
+                                            <button
+                                                onClick={() => {
+                                                    setIsMenuOpen(false);
+                                                    setIsUserInfoModalOpen(true);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all shadow-md"
+                                            >
+                                                <UserIcon className="w-6 h-6 text-green-600" />
+                                                <span className="font-medium">{user.name}</span>
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setIsMenuOpen(false);
+                                                    setIsLogoutConfirmModalOpen(true);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-xl hover:from-red-700 hover:to-red-600 transition-all shadow-lg"
+                                            >
+                                                <LogoutIcon className="w-6 h-6" />
+                                                <span className="font-medium">تسجيل الخروج</span>
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Link 
+                                            to="/" 
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                                                isActive('/') 
+                                                    ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg' 
+                                                    : 'bg-gray-50 text-gray-700 hover:bg-green-50'
+                                            }`}
+                                        >
+                                            <HomeIcon className="w-6 h-6" />
+                                            <span className="font-medium">الصفحة الرئيسية</span>
+                                        </Link>
+                                        
+                                        <div className="pt-6 mt-6 border-t space-y-2">
+                                            <Link
+                                                to="/login"
+                                                onClick={() => setIsMenuOpen(false)}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg"
+                                            >
+                                                <LoginIcon className="w-6 h-6" />
+                                                <span className="font-medium">تسجيل الدخول</span>
+                                            </Link>
+                                            <Link
+                                                to="/register"
+                                                onClick={() => setIsMenuOpen(false)}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl hover:from-green-700 hover:to-teal-700 transition-all shadow-lg"
+                                            >
+                                                <UserIcon className="w-6 h-6" />
+                                                <span className="font-medium">تسجيل حساب جديد</span>
+                                            </Link>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </nav>
 
+            {/* Modals */}
             {isUserInfoModalOpen && <UserInfoModal user={user} onClose={() => setIsUserInfoModalOpen(false)} />}
             {isLogoutConfirmModalOpen && (
                 <LogoutConfirmModal
