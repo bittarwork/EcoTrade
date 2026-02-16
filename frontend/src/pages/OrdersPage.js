@@ -173,29 +173,48 @@ const OrdersPage = () => {
         request.address.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const isError = statusMessage && (statusMessage.includes('خطأ') || statusMessage.includes('فشل'));
+
     return (
         <div className="min-h-screen bg-gray-50/50" dir="rtl">
             {user ? (
-                <div className="p-4 sm:p-6 mb-6 max-w-6xl mx-auto">
-                    <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-center text-gray-800">
-                        {user.role === 'admin' ? 'إدارة الطلبات' : 'طلباتك'}
-                    </h1>
+                <div className="p-0 sm:p-2 mb-6 max-w-7xl mx-auto">
+                    {/* Page header - unified for admin and user */}
+                    <div className="mb-6">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+                            {user.role === 'admin' ? 'إدارة الطلبات' : 'طلباتك'}
+                        </h1>
+                        <p className="mt-1 text-sm text-gray-500">
+                            {user.role === 'admin'
+                                ? 'عرض وتصفية وتحديث حالة طلبات المستخدمين'
+                                : 'عرض طلباتك وإنشاء طلبات جديدة'}
+                        </p>
+                    </div>
 
+                    {/* Toast-like status message */}
                     {statusMessage && (
                         <div
                             role="alert"
-                            className={`mb-4 py-3 px-4 rounded-lg text-center font-medium ${
-                                statusMessage.includes('خطأ') || statusMessage.includes('فشل')
-                                    ? 'bg-red-50 text-red-700 border border-red-200'
-                                    : 'bg-green-50 text-green-700 border border-green-200'
+                            className={`mb-6 flex items-center gap-3 py-3 px-4 rounded-xl font-medium shadow-sm border ${
+                                isError ? 'bg-red-50 text-red-800 border-red-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                             }`}
                         >
-                            {statusMessage}
+                            {isError ? (
+                                <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            ) : (
+                                <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            )}
+                            <span>{statusMessage}</span>
                         </div>
                     )}
 
-                    <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center mb-6">
-                        {user.role !== 'admin' && (
+                    {/* User-only: search and create */}
+                    {user.role !== 'admin' && (
+                        <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center mb-6">
                             <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
                                 <label htmlFor="orders-search" className="text-sm font-medium text-gray-600">
                                     بحث عن عنوان الطلب
@@ -209,8 +228,6 @@ const OrdersPage = () => {
                                     className="border border-gray-300 rounded-lg px-4 py-2 w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
-                        )}
-                        {user.role !== 'admin' && (
                             <button
                                 type="button"
                                 onClick={() => setIsPopupOpen(true)}
@@ -218,8 +235,8 @@ const OrdersPage = () => {
                             >
                                 إنشاء طلب جديد
                             </button>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {isPopupOpen && (
                         <RequestPopup
@@ -232,23 +249,17 @@ const OrdersPage = () => {
                     )}
 
                     {requestsLoading ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-                            <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-3" />
-                            <p>جاري تحميل الطلبات...</p>
+                        <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                            <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+                            <p className="text-sm font-medium">جاري تحميل الطلبات...</p>
                         </div>
                     ) : user.role === 'admin' ? (
-                        groupedRequests.length > 0 ? (
-                            <GroupedRequestsList
-                                groupedRequests={groupedRequests}
-                                onUpdateStatus={updateRequestStatus}
-                                onDeleteRequest={deleteRequest}
-                                onCancelRequest={cancelRequest}
-                            />
-                        ) : (
-                            <div className="text-center text-gray-500 p-8 border border-gray-200 rounded-xl bg-white">
-                                <p>لا توجد طلبات متاحة حالياً.</p>
-                            </div>
-                        )
+                        <GroupedRequestsList
+                            groupedRequests={groupedRequests}
+                            onUpdateStatus={updateRequestStatus}
+                            onDeleteRequest={deleteRequest}
+                            onCancelRequest={cancelRequest}
+                        />
                     ) : filteredRequests.length > 0 ? (
                         <RequestsList
                             requests={filteredRequests}
@@ -256,12 +267,10 @@ const OrdersPage = () => {
                             userRole={user.role}
                         />
                     ) : (
-                        <div className="text-center text-gray-500 p-8 border border-gray-200 rounded-xl bg-white">
+                        <div className="text-center text-gray-500 p-12 border border-gray-200 rounded-2xl bg-white shadow-sm">
                             <p>{searchQuery ? 'لا توجد نتائج تطابق البحث.' : 'لا توجد طلبات. يمكنك إنشاء طلب جديد.'}</p>
                         </div>
                     )}
-
-
                 </div>
             ) : (
                 <div className="text-center p-6">
