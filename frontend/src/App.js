@@ -7,7 +7,6 @@ import HomePage from './pages/HomePage';
 import OrdersPage from './pages/OrdersPage';
 import AuctionsPage from './pages/AuctionsPage';
 import ContactPage from './pages/ContactPage';
-import DevelopersPage from './pages/DevelopersPage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import AuctionRoom from './pages/auction/AuctionRoom';
@@ -60,7 +59,6 @@ const AppRoutes = () => {
       <Route path="/terms-of-service" element={<RegularRoute><Termofuse /></RegularRoute>} />
       <Route path="/privacy-policy" element={<RegularRoute><Privacypolicy /></RegularRoute>} />
       <Route path="/support" element={<RegularRoute><SupportPage /></RegularRoute>} />
-      <Route path="/developers" element={<RegularRoute><DevelopersPage /></RegularRoute>} />
       
       {/* User Routes - Can be accessed by both admin and users */}
       <Route path="/auction-room/:auctionId" element={<RegularRoute><AuctionRoom /></RegularRoute>} />

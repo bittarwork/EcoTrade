@@ -158,11 +158,11 @@ const HomePage = () => {
                                     </svg>
                                 </Link>
                                 <Link
-                                    to="/developers"
+                                    to="/contact"
                                     className="bg-white/10 backdrop-blur-sm border-2 border-white text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/20 transition-all flex items-center justify-center gap-2"
                                 >
                                     <GlobeAltIcon className="w-6 h-6" />
-                                    <span>اكتشف المزيد</span>
+                                    <span>تواصل معنا</span>
                                 </Link>
                             </div>
 

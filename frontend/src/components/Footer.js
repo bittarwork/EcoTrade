@@ -83,12 +83,6 @@ const Footer = () => {
                                 </Link>
                             </li>
                             <li>
-                                <Link to="/developers" className="text-gray-400 hover:text-green-400 transition-colors flex items-center">
-                                    <span className="ml-2">›</span>
-                                    معلومات المطورين
-                                </Link>
-                            </li>
-                            <li>
                                 <Link to="/support" className="text-gray-400 hover:text-green-400 transition-colors flex items-center">
                                     <span className="ml-2">›</span>
                                     الدعم الفني
@@ -165,9 +159,9 @@ const Footer = () => {
                         </p>
                         <div className="flex items-center space-x-2 space-x-reverse text-gray-400 text-sm">
                             <span>تم التطوير بواسطة</span>
-                            <Link to="/developers" className="text-green-400 hover:text-green-300 font-semibold transition-colors">
-                                فريق EcoTrade
-                            </Link>
+                            <span className="text-green-400 font-semibold">
+                                أسامة بيطار
+                            </span>
                         </div>
                     </div>
                 </div>
