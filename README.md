@@ -1,6 +1,6 @@
 # EcoTrade
 
-A full-stack web application for a recycling company, enabling users to request mobile scrap collection and participate in online auctions for recycled materials. The platform promotes sustainability by connecting material providers with buyers through a transparent, fair market mechanism.
+**A Digital Platform for Smart Recycling and Scrap Trading**
 
 ---
 
@@ -15,276 +15,155 @@ A full-stack web application for a recycling company, enabling users to request 
 
 ---
 
-## Table of Contents
+## Introduction
 
-- [Project Overview](#project-overview)
-- [Vision & Philosophy](#vision--philosophy)
-- [Technical Stack](#technical-stack)
-- [Project Structure](#project-structure)
-- [Database & Architecture](#database--architecture)
-- [Diagrams](#diagrams)
-- [Features](#features)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the Application](#running-the-application)
-- [Demo Credentials](#demo-credentials)
-- [Documentation](#documentation)
+EcoTrade addresses a fundamental gap in the recycling sector: the disconnect between those who possess recyclable materials—individuals, households, enterprises, and institutions—and those who wish to acquire them—recycling companies, scrap dealers, and investors. Often, these materials are discarded, stored, or left unused, leading to environmental, social, and economic losses.
+
+EcoTrade acts as a bridge. It is a digital platform that connects supply and demand through two core mechanisms: **material collection requests** and **online auctions**. The goal is to transform recycling from a marginal activity into part of the formal economy, where materials are properly valued and all parties benefit.
 
 ---
 
-## Project Overview
+## Vision and Philosophy
 
-EcoTrade addresses the gap between individuals and businesses who possess recyclable materials and buyers who struggle to access them easily. The platform acts as a bridge, connecting supply and demand through:
+### Turning Waste into a Resource
 
-1. **Material collection requests** – Users request a mobile seller to pick up scrap materials.
-2. **Online auctions** – Users bid on recycled materials in a fair, transparent auction format.
+The philosophy of EcoTrade rests on a simple principle: what is considered waste in one place can be a valuable resource elsewhere. Materials such as metals, plastics, electronics, paper and cardboard, and furniture are not merely "scrap" to be discarded—they are potential inputs for recycling and manufacturing processes.
 
-The platform supports the circular economy by facilitating the flow of materials from end consumers to processors and manufacturers.
+### Connecting Environment and Economy
 
----
+The project does not focus solely on the environmental dimension; it ties it to economic opportunity. When owners can sell what they have at a fair price and buyers can easily access what they need, sustainability becomes a viable, profitable choice rather than merely a charitable act.
 
-## Vision & Philosophy
+### Core Values
 
-### Core Principles
-
-- **Waste as a resource:** Materials such as metals, plastics, electronics, paper, and furniture are potential inputs for recycling and manufacturing.
-- **Transparency & fairness:** Auctions ensure prices are determined by actual demand and visible competition.
-- **Simplicity:** Register → Submit request or join auction → Complete transaction.
-
-### Strategic Objectives
-
-| Objective | Description |
-|-----------|-------------|
-| Transparent market | Reduce fragmentation; prices determined by real demand |
-| Simplified disposal | Connect individuals and small shops with collection entities |
-| Circular economy | Return materials to the production cycle instead of landfills |
-| Environmental awareness | Combine personal benefit with environmental interest |
-
-### Target Users
-
-- **Material providers:** Individuals, enterprises, shops, and institutions.
-- **Material buyers:** Recycling companies, scrap dealers, investors.
-- **Administrators:** Manage workflow from requests through auctions to fulfillment.
+| Value | Description |
+|-------|-------------|
+| **Transparency** | All bidders see the same information; price is determined through clear competition. |
+| **Fairness** | There is no distinction between a factory owner and a small provider; anyone with usable materials can participate. |
+| **Trust** | Traceable records for requests, materials, and bids; support channels for dispute resolution. |
+| **Simplicity** | Register, submit a request or join an auction, then complete the transaction. |
 
 ---
 
-## Technical Stack
+## Strategic Objectives
 
-| Layer | Technologies |
-|-------|--------------|
-| **Frontend** | React 18, React Router, Axios, Leaflet (maps), Chart.js, Socket.io-client, Tailwind CSS |
-| **Backend** | Node.js, Express.js |
-| **Database** | MongoDB with Mongoose ODM |
-| **Authentication** | JWT (JSON Web Tokens) |
-| **Real-time** | Socket.io |
-| **Scheduling** | node-cron (auction expiration, status updates) |
-| **File upload** | Multer |
-| **Email** | Nodemailer |
+1. **Creating a transparent and fair market** — Reducing fragmentation in the recycling sector; prices determined by actual demand rather than opaque dealings.
+2. **Simplifying the disposal of recyclable materials** — Connecting individuals and small shops directly with collection and processing entities.
+3. **Supporting the circular economy** — Facilitating the flow of materials from end consumers back into the production cycle.
+4. **Promoting environmental awareness through economic benefit** — When individuals see they can earn from "waste," they become more willing to participate in recycling.
 
 ---
 
-## Project Structure
+## Target Groups
 
-```
-EcoTrade/
-├── backend/                 # Node.js + Express API
-│   ├── controllers/         # Request handlers
-│   ├── models/              # Mongoose schemas (User, Request, ScrapItem, Auction, Message)
-│   ├── routes/              # API routes
-│   ├── middleware/          # Auth, validation
-│   ├── scheduled/           # Cron jobs
-│   ├── scripts/             # Seed script
-│   └── server.js
-├── frontend/                # React SPA
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/           # User & Admin pages
-│   │   ├── context/         # User/auth context
-│   │   └── ...
-│   └── package.json
-├── documentation/           # Detailed project documentation
-│   ├── project-overview.md
-│   ├── user-pages-complete-documentation.md
-│   ├── admin-dashboard.md
-│   └── seed.md
-├── screen/                  # Screenshots and diagrams
-│   ├── User/                # User interface screenshots
-│   ├── Admin/               # Admin dashboard screenshots
-│   └── diagram/             # ERD and Use Case diagrams
-└── README.md
-```
+- **Material Providers:** Individuals, enterprises, factories, shops, and institutions who own recyclable materials.
+- **Material Buyers:** Recycling companies, scrap dealers, and investors seeking materials.
+- **Administration:** Managers who oversee the full workflow—from receiving requests, classifying materials, running auctions, to coordinating delivery with winners.
 
 ---
 
-## Database & Architecture
+## The Operational Flow
 
-### Main Entities
+EcoTrade operates in four phases:
 
-| Entity | Description |
-|--------|-------------|
-| **User** | name, email, password, role (user/admin) |
-| **Request** | userId, address, scrapType, images, position, status (pending/completed/canceled) |
-| **ScrapItem** | name, description, category, quantity, status, estimatedPrice, source, userRequestId |
-| **Auction** | itemName, description, category, startPrice, bids, endDate, status (open/closed/canceled) |
-| **Message** | customerName, email, message (contact form) |
-
-### Entity Relationships
-
-- **User** → **Request** (one-to-many)
-- **Request** → **ScrapItem** (optional, via userRequestId)
-- **Auction** → **User** (currentBidder, winner, bids)
-- **ScrapItem** categories: Metals, Plastics, Electronics, Paper and Cardboard, Furniture
-
-### Request Status Flow
-
-`pending` → `completed` or `canceled`
-
-### ScrapItem Status Flow
-
-`Received` → `Processed` → `Ready for Recycling` → `Ready for Auction`
-
-### Auction Status Flow
-
-`open` → `closed` or `canceled`
+1. **Submission and Request** — A provider submits a request with location, material type, approximate quantity, and images. The request reaches the platform administration and is recorded.
+2. **Collection and Classification** — The responsible entity collects and classifies materials into categories (metals, plastics, electronics, etc.) and tracks them through stages: received → processed → ready for recycling → ready for auction.
+3. **The Auction** — When a batch is ready, an auction is opened with a starting price and end date. Bidders submit offers; the highest bidder wins when time expires.
+4. **Completing the Transaction** — After the winner is declared, coordination takes place for collection or delivery, followed by payment and handover.
 
 ---
 
-## Diagrams
+## The Platform in Action
 
-Project diagrams are available in the `screen/diagram/` folder:
+### User Experience
 
-- **ERD (Entity-Relationship Diagram):** Database schema and relationships between entities.
-- **Use Case Diagram:** Actors (User, Admin) and their interactions with the system.
+Registered users interact with the platform through three main areas: requests, auctions, and the auction room. The interface is designed with a consistent visual identity—green-to-blue gradients, clean sections, and clear call-to-action buttons—to reinforce familiarity and ease of use.
 
-Refer to these diagrams for a visual overview of the system architecture and user flows.
+#### 1. Requests Page (طلباتك)
 
----
+Users submit and manage their material collection and recycling requests. They can search, filter by status (all, pending, completed, canceled), and create new requests. Each request includes location selection via an interactive map, scrap type, and supporting images. Status tracking and admin notes keep users informed throughout the process.
 
-## Features
+![Requests Page](screen/User/userRequest.png)
 
-### User Portal
+#### 2. Auctions Listing (المزادات)
 
-| Feature | Description |
-|---------|-------------|
-| **Requests / Orders** | Create and track material collection requests. Search, filter by status, sort. Interactive map for location selection. Upload 1–5 images per request. |
-| **Auctions Listing** | Browse auctions with filters (status, category), search, grid/list views. Live stats (total, active, completed, bids). |
-| **Auction Room** | View full details, countdown, bid history. Place bids with validation. Winner display when closed. |
+Users browse available auctions, filter by status and category, search by item name, and switch between grid and list views. Each auction card shows images, status, time remaining, price information in euros, and statistics (views, participants, bids). Live statistics and countdown timers create urgency and support informed bidding decisions.
 
-### Admin Dashboard
+![Auctions Page](screen/User/userAuction.png)
 
-| Feature | Description |
-|---------|-------------|
-| **Main Dashboard** | Summary stats (users, orders, auctions, materials, messages). Order and auction status distribution. Quick actions. |
-| **User Management** | List, filter, search users. Add, edit, delete. Role management (admin/user). |
-| **Materials Management** | CRUD for scrap items. Category and status filters. Analytics view. |
-| **Auctions Management** | Create, cancel, close, delete auctions. Status and category filters. |
-| **Auction Room (Admin)** | View bids, winner info, close/cancel/delete with confirmation. |
-| **Messages** | View and manage contact form submissions. Analytics and date filters. |
-| **Orders / Requests** | Manage collection requests. Status workflow and user details. |
+#### 3. Auction Room (غرفة المزاد)
+
+The auction room displays full details: images, description, category, quantity, location, condition, weight, specifications, start price, current bid, and end date. Users see a live countdown, bid history, and can place new bids. When an auction closes, winner information is displayed. The design ensures transparency and reduces errors or disputes.
+
+![Auction Room](screen/User/userAuctionRoom.png)
 
 ---
 
-## Installation
+### Admin Experience
 
-### Prerequisites
+Administrators access a dedicated dashboard for oversight and management. Access is restricted to users with administrative privileges.
 
-- Node.js (v18+ recommended)
-- MongoDB (local or Atlas)
-- npm or yarn
+#### Main Dashboard
 
-### Steps
+The entry point provides summary statistics (users, orders, auctions, materials, messages), visual breakdowns of order and auction status, and quick links to all management sections. This answers the fundamental question: *What is the current state of the platform?*
 
-1. **Clone the repository** (for authorized use only):
+![Main Dashboard](screen/Admin/admin-dashboard.png)
 
-   ```bash
-   git clone https://github.com/your-username/EcoTrade.git
-   cd EcoTrade
-   ```
+#### User Management
 
-2. **Install backend dependencies:**
+Administrators manage platform accounts: list users, filter by role (admin or regular user), search, add, edit, and delete accounts. This underpins security and access control.
 
-   ```bash
-   cd backend
-   npm install
-   ```
+![User Management](screen/Admin/admin-user.png)
 
-3. **Install frontend dependencies:**
+#### Materials Management
 
-   ```bash
-   cd ../frontend
-   npm install
-   ```
+The inventory of recyclable materials is managed here. Items are displayed with attributes such as name, description, category, quantity, estimated price, status, and source (user request or manual entry). Materials move through the workflow from receipt to auction readiness. Administrators can add, edit, delete, and analyze materials by category and status.
 
----
+![Materials Management](screen/Admin/admin-matireal.png)
 
-## Configuration
+#### Auctions Management
 
-Create a `.env` file in the `backend/` directory:
+Administrators create, cancel, close, and delete auctions. Each auction shows item details, images, prices, time remaining, and status. Filters by status and category support efficient prioritisation.
 
-```env
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
-```
+![Auctions Management](screen/Admin/admin-auction.png)
 
-Optionally configure Nodemailer and other services as needed for your environment.
+#### Messages Management
+
+Customer inquiries and feedback from the contact form are centralised here. Administrators can view message details, search, filter by date, and monitor trends through analytics (e.g. messages over the last 14 days).
+
+![Messages Management](screen/Admin/admin-massages.png)
+
+#### Orders / Requests Management
+
+All material collection requests submitted by users are managed here. Administrators track status from submission through processing to completion or cancellation, view user information and request details, and ensure timely pickup and clear communication.
+
+![Orders Management](screen/Admin/admin-request.png)
 
 ---
 
-## Running the Application
+## Expected Impact
 
-1. **Start the backend** (from `backend/`):
+### Environmental
 
-   ```bash
-   npm start
-   ```
+- Reducing waste that is dumped, burned, or landfilled.
+- Saving energy and raw materials needed for new production.
+- Contributing to lower carbon emissions.
 
-2. **Start the frontend** (from `frontend/`, in a new terminal):
+### Economic
 
-   ```bash
-   npm start
-   ```
+- Creating income opportunities for material providers.
+- Providing competitively priced materials for processors and companies.
+- Revitalising and improving the efficiency of the recycling market.
 
-3. Open `http://localhost:3000` in your browser.
+### Social
 
-### Database Seeding
-
-To populate the database with demo data:
-
-```bash
-cd backend
-npm run seed        # Adds data only if database is empty
-npm run seed:clear  # Clears all collections, then seeds fresh data
-```
+- Raising awareness of recycling through practical engagement.
+- Encouraging cooperation between individuals, companies, and institutions.
 
 ---
 
-## Demo Credentials
+## Conclusion
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@ecotrade.com | Admin123! |
-| User | john@example.com | User123! |
-| User | jane@example.com | User123! |
-
----
-
-## Documentation
-
-Detailed documentation is available in the `documentation/` folder:
-
-| File | Content |
-|------|---------|
-| `project-overview.md` | Vision, philosophy, objectives, target groups |
-| `user-pages-complete-documentation.md` | User pages: Requests, Auctions, Auction Room |
-| `admin-dashboard.md` | Admin dashboard sections and features |
-| `seed.md` | Database seeding instructions |
-
----
-
-## Currency & Dates
-
-- **Currency:** Euro (€)
-- **Dates:** Gregorian (ISO 8601)
+EcoTrade is not merely a platform for selling used materials; it is an initiative that sees recycling as an economic, environmental, and social opportunity combined. The core idea is to connect those who have reusable materials with those who seek them, while ensuring price transparency and fair competition through the auction system. In this way, the project transforms recycling into part of the formal economy, where materials are properly valued and everyone benefits: the seller, the buyer, and the environment.
 
 ---
 
