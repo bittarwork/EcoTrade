@@ -49,6 +49,7 @@ const AuctionRoom = () => {
                 clearInterval(updateIntervalRef.current);
             }
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auctionId]);
 
     // Fetch auction details from backend

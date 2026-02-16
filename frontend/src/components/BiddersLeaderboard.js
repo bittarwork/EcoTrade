@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    TrophyIcon,
+    BadgeCheckIcon,
     UserIcon,
     CurrencyDollarIcon,
 } from '@heroicons/react/outline';
@@ -30,7 +30,7 @@ const BiddersLeaderboard = ({ bids = [], currentUserId }) => {
             {/* Header */}
             <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
-                    <TrophyIcon className="w-7 h-7 text-white" />
+                    <BadgeCheckIcon className="w-7 h-7 text-white" />
                 </div>
                 <div>
                     <h3 className="text-xl font-bold text-gray-800">أفضل المزايدين</h3>
