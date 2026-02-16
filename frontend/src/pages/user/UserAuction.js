@@ -4,8 +4,22 @@ import { useNavigate } from 'react-router-dom';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { getApiUrl } from '../../config/api';
+import {
+    SearchIcon,
+    FilterIcon,
+    ViewGridIcon,
+    ViewListIcon,
+    SparklesIcon,
+    ClockIcon,
+    EyeIcon,
+    UserGroupIcon,
+    TrendingUpIcon,
+    RefreshIcon,
+    XIcon,
+} from '@heroicons/react/outline';
 
 const UserAuction = () => {
+    // State management
     const [auctions, setAuctions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -13,61 +27,82 @@ const UserAuction = () => {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterCategory, setFilterCategory] = useState('all');
     const [sortOrder, setSortOrder] = useState('default');
-    const [endDateFilter, setEndDateFilter] = useState('');
+    const [viewMode, setViewMode] = useState('grid');
+    const [showFilters, setShowFilters] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     const navigate = useNavigate();
 
+    // Fetch auctions on component mount
     useEffect(() => {
-        const fetchAuctions = async () => {
-            try {
-                const response = await fetch(getApiUrl('auction'));
-                if (!response.ok) {
-                    throw new Error('Failed to fetch auctions');
-                }
-                const data = await response.json();
-                setAuctions(data);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchAuctions();
     }, []);
 
+    // Fetch auctions from backend with error handling
+    const fetchAuctions = async () => {
+        setRefreshing(true);
+        try {
+            const response = await fetch(getApiUrl('auction'));
+            
+            if (!response.ok) {
+                throw new Error('فشل في جلب المزادات من الخادم');
+            }
+            
+            const data = await response.json();
+            
+            // Validate data structure
+            if (!Array.isArray(data)) {
+                throw new Error('البيانات المستلمة غير صحيحة');
+            }
+            
+            setAuctions(data);
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching auctions:', err);
+            setError(err.message || 'حدث خطأ أثناء جلب المزادات');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    // Filter auctions based on search and filters
     const filteredAuctions = auctions.filter(auction => {
-        const matchesSearch = auction.itemName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = auction.itemName?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || auction.status === filterStatus;
         const matchesCategory = filterCategory === 'all' || auction.category === filterCategory;
-        const matchesEndDate = !endDateFilter || new Date(auction.endDate) < new Date(endDateFilter);
-
-        return matchesSearch && matchesStatus && matchesCategory && matchesEndDate;
+        return matchesSearch && matchesStatus && matchesCategory;
     });
 
-    const sortedAuctions = filteredAuctions.sort((a, b) => {
+    // Sort filtered auctions
+    const sortedAuctions = [...filteredAuctions].sort((a, b) => {
         switch (sortOrder) {
             case 'priceAsc':
-                return a.startPrice - b.startPrice;
+                return (a.startPrice || 0) - (b.startPrice || 0);
             case 'priceDesc':
-                return b.startPrice - a.startPrice;
+                return (b.startPrice || 0) - (a.startPrice || 0);
             case 'newest':
-                return new Date(b.endDate) - new Date(a.endDate);
+                return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
             case 'oldest':
-                return new Date(a.endDate) - new Date(b.endDate);
+                return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+            case 'ending':
+                return new Date(a.endDate || 0) - new Date(b.endDate || 0);
+            case 'popular':
+                return (b.viewsCount || 0) - (a.viewsCount || 0);
             default:
                 return 0;
         }
     });
 
+    // Reset all filters
     const resetFilters = () => {
         setSearchTerm('');
         setFilterStatus('all');
         setFilterCategory('all');
         setSortOrder('default');
-        setEndDateFilter('');
     };
 
+    // Slider settings for auction images
     const sliderSettings = {
         dots: true,
         infinite: true,
@@ -76,122 +111,410 @@ const UserAuction = () => {
         slidesToScroll: 1,
         autoplay: true,
         autoplaySpeed: 3000,
+        rtl: true,
     };
 
+    // Calculate time remaining for auction
+    const calculateTimeRemaining = (endDate) => {
+        if (!endDate) return 'غير محدد';
+        
+        const now = new Date();
+        const end = new Date(endDate);
+        const diff = end - now;
+
+        if (diff <= 0) return 'انتهى المزاد';
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (days > 0) return `${days} يوم ${hours} ساعة`;
+        if (hours > 0) return `${hours} ساعة ${minutes} دقيقة`;
+        return `${minutes} دقيقة`;
+    };
+
+    // Get status badge styling
+    const getStatusBadge = (status) => {
+        const badges = {
+            open: {
+                class: 'bg-gradient-to-r from-green-500 to-teal-500 text-white',
+                label: 'نشط'
+            },
+            closed: {
+                class: 'bg-gradient-to-r from-gray-500 to-gray-600 text-white',
+                label: 'مغلق'
+            },
+            canceled: {
+                class: 'bg-gradient-to-r from-red-500 to-pink-500 text-white',
+                label: 'ملغي'
+            },
+        };
+        return badges[status] || badges.open;
+    };
+
+    // Loading state
     if (loading) {
-        return <div className="text-center">Loading...</div>;
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="relative w-20 h-20 mx-auto mb-4">
+                        <div className="absolute inset-0 border-4 border-green-200 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-green-600 rounded-full border-t-transparent animate-spin"></div>
+                    </div>
+                    <p className="text-xl font-semibold text-gray-700">جاري تحميل المزادات...</p>
+                    <p className="text-sm text-gray-500 mt-2">يرجى الانتظار بينما نجلب أحدث المزادات</p>
+                </div>
+            </div>
+        );
     }
 
+    // Error state
     if (error) {
-        return <div className="text-red-500 text-center">Error: {error}</div>;
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center p-6">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+                    <div className="w-20 h-20 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <XIcon className="w-10 h-10 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">خطأ في تحميل المزادات</h2>
+                    <p className="text-red-600 mb-6">{error}</p>
+                    <button
+                        onClick={fetchAuctions}
+                        className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg"
+                    >
+                        حاول مرة أخرى
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="container mx-auto">
-            <h1 className="text-2xl font-bold mb-6 text-center">المزادات</h1>
-
-            <h2 className='text-right text-xl text-gray-600 mb-2'>:الفلترة</h2>
-            <div className="flex flex-col gap-y-2 md:flex-row md:items-center md:justify-between gap-x-4 mb-4">
-                <input
-                    type="text"
-                    placeholder="ابحث عن مزاد..."
-                    className="p-2 border border-gray-300 rounded flex-1"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <div className="flex flex-col gap-y-2 md:flex-row md:items-center md:space-x-4">
-                    <select
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                        className="p-2 border border-gray-300 rounded"
-                    >
-                        <option value="all">جميع الحالات</option>
-                        <option value="open">نشط</option>
-                        <option value="canceled">ملغي</option>
-                        <option value="closed">مغلق</option>
-                    </select>
-                    <select
-                        value={filterCategory}
-                        onChange={(e) => setFilterCategory(e.target.value)}
-                        className="p-2 border border-gray-300 rounded"
-                    >
-                        <option value="all">جميع الفئات</option>
-                        <option value="Metals">معادن</option>
-                        <option value="Plastics">بلاستيك</option>
-                        <option value="Electronics">إلكترونيات</option>
-                        <option value="Paper and Cardboard">ورق وكرتون</option>
-                        <option value="Furniture">أثاث</option>
-                    </select>
-                    <select
-                        value={sortOrder}
-                        onChange={(e) => setSortOrder(e.target.value)}
-                        className="p-2 border border-gray-300 rounded"
-                    >
-                        <option value="default">ترتيب افتراضي</option>
-                        <option value="priceAsc">الأعلى بداية سعر أولا</option>
-                        <option value="priceDesc">الأدنى بداية سعر أولا</option>
-                        <option value="newest">الأحدث أولا</option>
-                        <option value="oldest">الأقدم أولا</option>
-                    </select>
-                    <input
-                        type="date"
-                        value={endDateFilter}
-                        onChange={(e) => setEndDateFilter(e.target.value)}
-                        className="p-2 border border-gray-300 rounded"
-                    />
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-teal-50" dir="rtl">
+            {/* Hero Header */}
+            <section className="relative overflow-hidden bg-gradient-to-br from-green-600 via-teal-500 to-blue-500 text-white">
+                {/* Animated Background Shapes */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+                    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse delay-700"></div>
                 </div>
-                <button
-                    onClick={resetFilters}
-                    className="p-2 bg-green-500 hover:bg-green-600 transition-all duration-100 text-white rounded mt-2 md:mt-0 md:ml-2"
-                >
-                    إلغاء جميع الفلاتر
-                </button>
-            </div>
 
-
-            {sortedAuctions.length === 0 ? (
-                <div className="text-center text-gray-500 p-4 border border-gray-300 rounded-lg">
-                    <p>لا توجد مزادات متاحة حالياً.</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {sortedAuctions.map(auction => (
-                        <div
-                            key={auction._id}
-                            dir='rtl'
-                            className={`border p-4 rounded-lg shadow-lg transition-all duration-300 
-                                ${auction.status === 'canceled' ? 'bg-red-100 border-red-300' : auction.status === 'closed' ? 'bg-gray-100 border-gray-300' : 'bg-white hover:shadow-xl border-gray-300'}`}
-                        >
-                            <div className='mb-5'>
-                                <Slider {...sliderSettings}>
-                                    {auction.images.map((image, index) => (
-                                        <div key={index}>
-                                            <img src={image} alt={auction.itemName} className="w-full h-48 object-cover mb-2 rounded-lg" />
-                                        </div>
-                                    ))}
-                                </Slider>
+                <div className="relative max-w-7xl mx-auto px-6 py-16">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div>
+                            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
+                                <SparklesIcon className="w-5 h-5" />
+                                <span className="text-sm font-medium">المزادات المباشرة</span>
                             </div>
-                            <h3 className="font-bold text-xl mb-2">{auction.itemName}</h3>
-                            <p className="text-gray-700 mb-2">{auction.description}</p>
-                            <p className="mb-1"><strong>الفئة:</strong> {auction.category}</p>
-                            <p className="mb-1"><strong>سعر البداية:</strong> {auction.startPrice} ل.س</p>
-                            <p className="mb-1"><strong>القيمة الحالية:</strong> {auction.currentBid} ل.س</p>
-                            <p className="mb-2"><strong>تاريخ انتهاء المزاد:</strong> {new Date(auction.endDate).toLocaleString()}</p>
-                            <p className={`text-sm font-semibold ${auction.status === 'canceled' ? 'text-red-600' : auction.status === 'closed' ? 'text-gray-600' : 'text-green-600'}`}>
-                                الحالة: {auction.status === 'canceled' ? 'ملغى' : auction.status === 'closed' ? 'مغلق' : 'نشط'}
+                            <h1 className="text-5xl md:text-6xl font-bold mb-4">
+                                اكتشف أفضل
+                                <span className="block bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
+                                    عروض المزادات
+                                </span>
+                            </h1>
+                            <p className="text-xl text-green-50 max-w-2xl">
+                                تصفح مجموعتنا من المواد القابلة لإعادة التدوير وضع عروضك على العناصر التي تحتاجها
                             </p>
-                            <button
-                                onClick={auction.status === 'open' ? () => navigate(`/auction-room/${auction._id}`) : null}
-                                disabled={auction.status !== 'open'}
-                                className={`mt-4 w-full p-2 rounded transition duration-200 
-                                    ${auction.status === 'open' ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
-                            >
-                                ادخل إلى غرفة المزاد
-                            </button>
                         </div>
-                    ))}
+
+                        <button
+                            onClick={fetchAuctions}
+                            disabled={refreshing}
+                            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg disabled:opacity-50"
+                        >
+                            <RefreshIcon className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                            تحديث
+                        </button>
+                    </div>
+
+                    {/* Statistics Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+                            <p className="text-3xl font-bold">{auctions.length}</p>
+                            <p className="text-sm text-green-50">إجمالي المزادات</p>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+                            <p className="text-3xl font-bold">{auctions.filter(a => a.status === 'open').length}</p>
+                            <p className="text-sm text-green-50">نشطة الآن</p>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+                            <p className="text-3xl font-bold">{auctions.filter(a => a.status === 'closed').length}</p>
+                            <p className="text-sm text-green-50">مكتملة</p>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+                            <p className="text-3xl font-bold">
+                                {auctions.reduce((acc, a) => acc + (a.participantsCount || 0), 0)}
+                            </p>
+                            <p className="text-sm text-green-50">إجمالي العروض</p>
+                        </div>
+                    </div>
                 </div>
-            )}
+            </section>
+
+            {/* Filters Section */}
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                <div className="bg-white rounded-3xl shadow-xl p-6 mb-8">
+                    {/* Search and View Toggle */}
+                    <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
+                        <div className="relative flex-1 w-full">
+                            <SearchIcon className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="ابحث عن المزادات..."
+                                className="w-full pr-12 pl-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all ${
+                                    showFilters
+                                        ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                <FilterIcon className="w-5 h-5" />
+                                الفلاتر
+                            </button>
+
+                            <div className="flex bg-gray-100 rounded-xl p-1">
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded-lg transition-all ${
+                                        viewMode === 'grid' ? 'bg-white shadow-md' : 'hover:bg-gray-200'
+                                    }`}
+                                    title="عرض شبكي"
+                                >
+                                    <ViewGridIcon className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    className={`p-2 rounded-lg transition-all ${
+                                        viewMode === 'list' ? 'bg-white shadow-md' : 'hover:bg-gray-200'
+                                    }`}
+                                    title="عرض قائمة"
+                                >
+                                    <ViewListIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Advanced Filters */}
+                    {showFilters && (
+                        <div className="border-t pt-6 animate-slide-down">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                {/* Status Filter */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">الحالة</label>
+                                    <select
+                                        value={filterStatus}
+                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    >
+                                        <option value="all">جميع الحالات</option>
+                                        <option value="open">نشط</option>
+                                        <option value="closed">مغلق</option>
+                                        <option value="canceled">ملغي</option>
+                                    </select>
+                                </div>
+
+                                {/* Category Filter */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">الفئة</label>
+                                    <select
+                                        value={filterCategory}
+                                        onChange={(e) => setFilterCategory(e.target.value)}
+                                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    >
+                                        <option value="all">جميع الفئات</option>
+                                        <option value="Metals">معادن</option>
+                                        <option value="Plastics">بلاستيك</option>
+                                        <option value="Electronics">إلكترونيات</option>
+                                        <option value="Paper and Cardboard">ورق وكرتون</option>
+                                        <option value="Furniture">أثاث</option>
+                                    </select>
+                                </div>
+
+                                {/* Sort Filter */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">ترتيب حسب</label>
+                                    <select
+                                        value={sortOrder}
+                                        onChange={(e) => setSortOrder(e.target.value)}
+                                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    >
+                                        <option value="default">افتراضي</option>
+                                        <option value="newest">الأحدث أولاً</option>
+                                        <option value="oldest">الأقدم أولاً</option>
+                                        <option value="priceAsc">السعر: من الأقل للأعلى</option>
+                                        <option value="priceDesc">السعر: من الأعلى للأقل</option>
+                                        <option value="ending">ينتهي قريباً</option>
+                                        <option value="popular">الأكثر شهرة</option>
+                                    </select>
+                                </div>
+
+                                {/* Reset Button */}
+                                <div className="flex items-end">
+                                    <button
+                                        onClick={resetFilters}
+                                        className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 shadow-lg"
+                                    >
+                                        إعادة تعيين الفلاتر
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Results Count */}
+                <div className="mb-6">
+                    <p className="text-lg font-semibold text-gray-700">
+                        تم العثور على <span className="text-green-600">{sortedAuctions.length}</span> مزاد
+                    </p>
+                </div>
+
+                {/* Auctions Grid/List */}
+                {sortedAuctions.length === 0 ? (
+                    <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-3xl p-12 text-center shadow-xl">
+                        <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <SearchIcon className="w-12 h-12 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">لم يتم العثور على مزادات</h3>
+                        <p className="text-gray-600 mb-6">جرب تعديل الفلاتر أو كلمات البحث</p>
+                        <button
+                            onClick={resetFilters}
+                            className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 shadow-lg"
+                        >
+                            مسح الفلاتر
+                        </button>
+                    </div>
+                ) : (
+                    <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}>
+                        {sortedAuctions.map((auction) => {
+                            const statusBadge = getStatusBadge(auction.status);
+                            const timeRemaining = calculateTimeRemaining(auction.endDate);
+
+                            return (
+                                <div
+                                    key={auction._id}
+                                    className={`bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group border-2 border-gray-100 hover:border-green-500 ${
+                                        viewMode === 'list' ? 'flex flex-row' : 'flex flex-col'
+                                    }`}
+                                >
+                                    {/* Image Section */}
+                                    <div className={`relative ${viewMode === 'list' ? 'w-1/3' : 'w-full'} overflow-hidden`}>
+                                        {auction.images && auction.images.length > 0 ? (
+                                            <Slider {...sliderSettings}>
+                                                {auction.images.map((image, index) => (
+                                                    <div key={index} className="relative">
+                                                        <img
+                                                            src={image}
+                                                            alt={`${auction.itemName} - صورة ${index + 1}`}
+                                                            className={`object-cover ${viewMode === 'list' ? 'h-64' : 'h-56'} w-full group-hover:scale-110 transition-transform duration-500`}
+                                                            onError={(e) => {
+                                                                e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                                                            }}
+                                                        />
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                                                    </div>
+                                                ))}
+                                            </Slider>
+                                        ) : (
+                                            <div className="w-full h-56 bg-gray-200 flex items-center justify-center">
+                                                <p className="text-gray-500">لا توجد صورة</p>
+                                            </div>
+                                        )}
+
+                                        {/* Status Badge */}
+                                        <div className="absolute top-4 left-4">
+                                            <span className={`${statusBadge.class} px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg`}>
+                                                {statusBadge.label}
+                                            </span>
+                                        </div>
+
+                                        {/* Time Remaining Badge */}
+                                        {auction.status === 'open' && (
+                                            <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-lg">
+                                                <ClockIcon className="w-4 h-4 text-red-500" />
+                                                <span className="text-xs font-bold text-gray-800">{timeRemaining}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Content Section */}
+                                    <div className={`p-5 ${viewMode === 'list' ? 'w-2/3 flex flex-col justify-between' : ''}`}>
+                                        <div>
+                                            <h3 className="font-bold text-xl mb-2 text-gray-800 line-clamp-1">
+                                                {auction.itemName || 'بدون اسم'}
+                                            </h3>
+                                            <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                                                {auction.description || 'لا يوجد وصف'}
+                                            </p>
+
+                                            {/* Category Badge */}
+                                            <div className="mb-4">
+                                                <span className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-3 py-1 rounded-lg text-xs font-semibold">
+                                                    {auction.category || 'غير محدد'}
+                                                </span>
+                                            </div>
+
+                                            {/* Stats */}
+                                            <div className="grid grid-cols-3 gap-2 mb-4">
+                                                <div className="flex items-center gap-1 text-xs text-gray-600" title="المشاهدات">
+                                                    <EyeIcon className="w-4 h-4" />
+                                                    <span>{auction.viewsCount || 0}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 text-xs text-gray-600" title="المشاركون">
+                                                    <UserGroupIcon className="w-4 h-4" />
+                                                    <span>{auction.participantsCount || 0}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 text-xs text-gray-600" title="العروض">
+                                                    <TrendingUpIcon className="w-4 h-4" />
+                                                    <span>{auction.bids?.length || 0}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Prices */}
+                                            <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-4 mb-4">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-xs font-semibold text-gray-600">سعر البداية</span>
+                                                    <span className="text-sm font-bold text-gray-800">
+                                                        {(auction.startPrice || 0).toLocaleString('ar-SY')} €
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-xs font-semibold text-gray-600">العرض الحالي</span>
+                                                    <span className="text-lg font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                                                        {(auction.currentBid || 0).toLocaleString('ar-SY')} €
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Button */}
+                                        <button
+                                            onClick={() => auction.status === 'open' && navigate(`/auction-room/${auction._id}`)}
+                                            disabled={auction.status !== 'open'}
+                                            className={`w-full py-3 rounded-xl font-bold transition-all duration-300 ${
+                                                auction.status === 'open'
+                                                    ? 'bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl'
+                                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            {auction.status === 'open' ? 'ادخل غرفة المزاد' : `المزاد ${statusBadge.label}`}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

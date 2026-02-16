@@ -1,24 +1,45 @@
 const express = require('express');
 const router = express.Router();
 const requestController = require('../controllers/requestController');
+const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 
+// Create new request - requires authentication
 router.post(
     '/create',
+    verifyToken,
     requestController.createRequest
 );
 
-// مسار للحصول على الطلبات مجمعة بحسب المستخدم
-router.get('/grouped', requestController.getRequestsGroupedByUser);
+// Get requests grouped by user - admin only
+router.get(
+    '/grouped',
+    verifyToken,
+    checkRole(['admin']),
+    requestController.getRequestsGroupedByUser
+);
 
-router.get('/:id', requestController.getUserRequests);
+// Get user requests - requires authentication
+router.get(
+    '/:id',
+    verifyToken,
+    requestController.getUserRequests
+);
 
+// Update request status - admin only
 router.put(
     '/update-status',
+    verifyToken,
+    checkRole(['admin']),
     requestController.updateRequestStatus
 );
 
-// مسار لحذف طلب معين بناءً على الـ ID
-router.delete('/:id', requestController.deleteRequestById);
+// Delete request - admin only
+router.delete(
+    '/:id',
+    verifyToken,
+    checkRole(['admin']),
+    requestController.deleteRequestById
+);
 
 module.exports = router;
 // 1. إنشاء طلب جديد(/api/requests)

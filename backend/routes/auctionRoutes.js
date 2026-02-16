@@ -9,34 +9,38 @@ const {
     getCurrentBids,
     updateBid,
     getTopBidders,
-    cancelAuction
+    cancelAuction,
+    getAuctionStats
 } = require('../controllers/auctionController');
 const upload = require('../config/multerConfig');
 
 const router = express.Router();
 
-// إضافة مسار لإنشاء مزاد جديد
+// Create new auction
 router.post('/', upload.array('images', 10), createAuction);
 
-// نقطة نهائية لاسترجاع جميع المزادات
+// Get all auctions with optional filters
 router.get('/', getAllAuctions);
 
-// نقطة نهائية لاسترجاع تفاصيل مزاد محدد
+// Get auction details
 router.get('/:auctionId', getAuctionDetails);
 
-// نقطة نهائية لإغلاق مزاد معين
-router.put('/close/:auctionId', closeAuction);
+// Get auction statistics
+router.get('/:auctionId/stats', getAuctionStats);
 
-// نقطة النهاية لإلغاء مزاد معين
-router.put('/cancel/:auctionId', cancelAuction);
+// Get top bidders for auction
+router.get('/:auctionId/top-bidders', getTopBidders);
 
-// نقطة نهائية لحذف مزاد معين
-router.delete('/:auctionId', deleteAuction);
-
-
-// نقطة نهائية لتحديث عرض المزايدة الحالي
+// Place/update bid
 router.put('/bid', updateBid);
 
+// Close auction
+router.put('/close/:auctionId', closeAuction);
 
+// Cancel auction
+router.put('/cancel/:auctionId', cancelAuction);
+
+// Delete auction
+router.delete('/:auctionId', deleteAuction);
 
 module.exports = router;

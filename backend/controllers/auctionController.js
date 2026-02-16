@@ -1,46 +1,72 @@
 const Auction = require('../models/auctionModel');
-const upload = require('../config/multerConfig'); // استيراد إعداد multer
+const upload = require('../config/multerConfig');
 
+// Create new auction with enhanced data
 const createAuction = async (req, res) => {
     try {
-        // التأكد من أن الصور تم رفعها
+        // Check if images are uploaded
         if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ message: 'يجب رفع صورة واحدة على الأقل.' });
+            return res.status(400).json({ message: 'At least one image is required.' });
         }
 
-        // إنشاء كائن جديد من المزاد
+        // Create auction object with all fields
         const auctionData = {
             itemName: req.body.itemName,
             description: req.body.description,
             category: req.body.category,
             startPrice: req.body.startPrice,
             endDate: req.body.endDate,
-            currentBid: 0, // أو أي قيمة افتراضية أخرى
-            images: req.files.map(file => `http://localhost:5000/${file.path}`), // تغيير الرابط وفقًا لإعدادات الخادم
+            currentBid: 0,
+            images: req.files.map(file => `http://localhost:5000/${file.path}`),
+            quantity: req.body.quantity || '',
+            location: req.body.location || '',
+            condition: req.body.condition || 'Good',
+            weight: req.body.weight || '',
+            specifications: req.body.specifications || '',
         };
 
-        // حفظ المزاد في قاعدة البيانات
+        // Save auction to database
         const newAuction = await Auction.create(auctionData);
 
-        // إعادة المزاد الجديد
         res.status(201).json(newAuction);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'حدث خطأ أثناء إنشاء المزاد.', error: error.message });
+        res.status(500).json({ message: 'Error creating auction.', error: error.message });
     }
 };
 
-// دالة لاسترجاع جميع المزادات
+// Get all auctions with optional filters and sorting
 const getAllAuctions = async (req, res) => {
     try {
-        // استرجاع جميع المزادات
-        const auctions = await Auction.find();
+        const { status, category, sortBy, order } = req.query;
+        
+        // Build filter query
+        let filter = {};
+        if (status && status !== 'all') {
+            filter.status = status;
+        }
+        if (category && category !== 'all') {
+            filter.category = category;
+        }
 
-        // إعادة المزادات كاستجابة
+        // Build sort object
+        let sort = {};
+        if (sortBy) {
+            sort[sortBy] = order === 'desc' ? -1 : 1;
+        } else {
+            sort.createdAt = -1; // Default: newest first
+        }
+
+        // Fetch auctions with filters and sorting
+        const auctions = await Auction.find(filter)
+            .sort(sort)
+            .populate('currentBidder', 'name email profileImage')
+            .populate('winner', 'name email profileImage');
+
         res.status(200).json(auctions);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'حدث خطأ أثناء استرجاع المزادات.', error: error.message });
+        res.status(500).json({ message: 'Error fetching auctions.', error: error.message });
     }
 };
 
@@ -71,21 +97,31 @@ const placeBid = async (req, res) => {
     }
 };
 
-// دالة لاسترجاع تفاصيل مزاد محدد
+// Get auction details with view counter
 const getAuctionDetails = async (req, res) => {
-    const { auctionId } = req.params; // الحصول على auctionId من معلمات الطلب
+    const { auctionId } = req.params;
 
     try {
-        const auction = await Auction.findById(auctionId);
+        const auction = await Auction.findById(auctionId)
+            .populate('currentBidder', 'name email profileImage')
+            .populate('winner', 'name email profileImage')
+            .populate({
+                path: 'bids.bidder',
+                select: 'name email profileImage'
+            });
 
         if (!auction) {
-            return res.status(404).json({ message: 'المزاد غير موجود.' });
+            return res.status(404).json({ message: 'Auction not found.' });
         }
+
+        // Increment view count
+        auction.viewsCount += 1;
+        await auction.save();
 
         res.status(200).json(auction);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'حدث خطأ أثناء استرجاع تفاصيل المزاد.', error: error.message });
+        res.status(500).json({ message: 'Error fetching auction details.', error: error.message });
     }
 };
 
@@ -152,48 +188,79 @@ const getCurrentBids = async (req, res) => {
     }
 };
 
-// دالة لتحديث عرض المزايدة الحالي
+// Update bid with enhanced features
 const updateBid = async (req, res) => {
     try {
         const { auctionId, bidderId, percentageIncrease } = req.body;
 
-        // التحقق من إرسال جميع البيانات المطلوبة
+        // Validate input
         if (!auctionId || !bidderId || !percentageIncrease) {
             return res.status(400).json({ error: 'All fields (auctionId, bidderId, percentageIncrease) are required' });
         }
 
-        // التأكد من وجود المزاد واسترداد المزاد من قاعدة البيانات
-        const auction = await Auction.findById(auctionId);
+        // Find auction
+        const auction = await Auction.findById(auctionId)
+            .populate('currentBidder', 'name email profileImage');
+        
         if (!auction) {
             return res.status(404).json({ error: 'Auction not found' });
         }
 
-        // التحقق مما إذا كان المزاد مفتوحاً
+        // Check if auction is open
         if (auction.status !== 'open') {
             return res.status(400).json({ error: 'Auction is not open for bidding' });
         }
 
-        // تحديد القيمة الأساسية لحساب الزيادة: إذا كان currentBid صفر، سنبدأ بـ startPrice
+        // Check if auction has expired
+        if (new Date() > new Date(auction.endDate)) {
+            auction.status = 'closed';
+            auction.winner = auction.currentBidder;
+            await auction.save();
+            return res.status(400).json({ error: 'Auction has expired' });
+        }
+
+        // Calculate base bid value
         const baseBid = auction.currentBid === 0 ? auction.startPrice : auction.currentBid;
 
-        // حساب القيمة الجديدة بناءً على نسبة الزيادة
+        // Calculate new bid amount
         const increaseAmount = baseBid * (percentageIncrease / 100);
         const newBidAmount = baseBid + increaseAmount;
 
-        // تحديث حقل currentBid والمزايد الحالي
+        // Check if bidder is already the highest bidder
+        if (auction.currentBidder && auction.currentBidder._id.toString() === bidderId) {
+            return res.status(400).json({ error: 'You are already the highest bidder' });
+        }
+
+        // Update current bid and bidder
         auction.currentBid = newBidAmount;
         auction.currentBidder = bidderId;
 
-        // إضافة السجل إلى قائمة المزايدات
+        // Add bid to history
         auction.bids.push({
-            bidder: bidderId,  // بدلاً من mongoose.Types.ObjectId
+            bidder: bidderId,
             bidAmount: newBidAmount,
+            bidTime: new Date(),
         });
 
-        // حفظ التغييرات
+        // Update participants count (count unique bidders)
+        const uniqueBidders = new Set(auction.bids.map(bid => bid.bidder.toString()));
+        auction.participantsCount = uniqueBidders.size;
+
+        // Save changes
         await auction.save();
 
-        res.status(200).json({ message: 'Bid updated successfully', auction });
+        // Populate the updated auction
+        const updatedAuction = await Auction.findById(auctionId)
+            .populate('currentBidder', 'name email profileImage')
+            .populate({
+                path: 'bids.bidder',
+                select: 'name email profileImage'
+            });
+
+        res.status(200).json({ 
+            message: 'Bid placed successfully', 
+            auction: updatedAuction 
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'An error occurred while updating the bid' });
@@ -201,48 +268,141 @@ const updateBid = async (req, res) => {
 };
 
 
-// دالة لاسترجاع أعلى المزايدين لمزاد معين
+// Get top bidders for an auction
 const getTopBidders = async (req, res) => {
     try {
         const { auctionId } = req.params;
+        const limit = parseInt(req.query.limit) || 10;
 
-        // تحقق من وجود المزاد
-        const auction = await Auction.findById(auctionId);
+        // Find auction
+        const auction = await Auction.findById(auctionId)
+            .populate({
+                path: 'bids.bidder',
+                select: 'name email profileImage'
+            });
+
         if (!auction) {
             return res.status(404).json({ message: 'Auction not found' });
         }
 
-        // استخدم وظائف مخصصة لاسترجاع أعلى المزايدين إذا لزم الأمر
-        // هذا يتطلب تخزين العروض في نموذج العروض أو نموذج آخر مخصص
+        // Sort bids by amount and get top bidders
+        const sortedBids = auction.bids
+            .sort((a, b) => b.bidAmount - a.bidAmount)
+            .slice(0, limit);
 
-        return res.status(200).json({ message: 'Top bidders retrieval is not implemented yet' });
+        return res.status(200).json({ topBidders: sortedBids });
     } catch (error) {
-        return res.status(500).json({ message: 'Server error', error });
+        console.error(error);
+        return res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
-const cancelAuction = async (req, res) => {
-    const { auctionId } = req.params; // الحصول على auctionId من معلمات الطلب
+
+// Close auction and declare winner
+const closeAuction = async (req, res) => {
+    const { auctionId } = req.params;
 
     try {
-        // تحديث حالة المزاد إلى 'canceled'
+        const auction = await Auction.findById(auctionId)
+            .populate('currentBidder', 'name email profileImage');
+
+        if (!auction) {
+            return res.status(404).json({ message: 'Auction not found.' });
+        }
+
+        // Set winner as the current highest bidder
+        if (auction.currentBidder) {
+            auction.winner = auction.currentBidder._id;
+        }
+
+        // Update status to closed
+        auction.status = 'closed';
+        await auction.save();
+
+        const closedAuction = await Auction.findById(auctionId)
+            .populate('currentBidder', 'name email profileImage')
+            .populate('winner', 'name email profileImage');
+
+        res.status(200).json({ 
+            message: 'Auction closed successfully.', 
+            auction: closedAuction 
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error closing auction.', error: error.message });
+    }
+};
+// Cancel auction
+const cancelAuction = async (req, res) => {
+    const { auctionId } = req.params;
+
+    try {
         const auction = await Auction.findByIdAndUpdate(
             auctionId,
             { status: 'canceled' },
-            { new: true } // إعادة الوثيقة المحدّثة
-        );
+            { new: true }
+        ).populate('currentBidder', 'name email profileImage');
 
-        // التحقق مما إذا كان المزاد موجودًا
         if (!auction) {
-            return res.status(404).json({ message: 'المزاد غير موجود.' });
+            return res.status(404).json({ message: 'Auction not found.' });
         }
 
-        // إعادة المزاد المحدّث كاستجابة
-        res.status(200).json({ message: 'المزاد ملغى بنجاح.', auction });
+        res.status(200).json({ message: 'Auction canceled successfully.', auction });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'حدث خطأ أثناء إلغاء المزاد.', error: error.message });
+        res.status(500).json({ message: 'Error canceling auction.', error: error.message });
     }
 };
+
+// Delete auction
+const deleteAuction = async (req, res) => {
+    const { auctionId } = req.params;
+
+    try {
+        const auction = await Auction.findByIdAndDelete(auctionId);
+
+        if (!auction) {
+            return res.status(404).json({ message: 'Auction not found.' });
+        }
+
+        res.status(200).json({ message: 'Auction deleted successfully.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error deleting auction.', error: error.message });
+    }
+};
+
+// Get auction statistics
+const getAuctionStats = async (req, res) => {
+    try {
+        const { auctionId } = req.params;
+
+        const auction = await Auction.findById(auctionId);
+
+        if (!auction) {
+            return res.status(404).json({ message: 'Auction not found.' });
+        }
+
+        const stats = {
+            totalBids: auction.bids.length,
+            participantsCount: auction.participantsCount,
+            viewsCount: auction.viewsCount,
+            currentBid: auction.currentBid,
+            startPrice: auction.startPrice,
+            priceIncrease: auction.currentBid - auction.startPrice,
+            priceIncreasePercentage: auction.startPrice > 0 
+                ? ((auction.currentBid - auction.startPrice) / auction.startPrice * 100).toFixed(2) 
+                : 0,
+            timeRemaining: Math.max(0, new Date(auction.endDate) - new Date()),
+            isExpired: new Date() > new Date(auction.endDate),
+        };
+
+        res.status(200).json(stats);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error fetching auction stats.', error: error.message });
+    }
+};
+
 module.exports = {
     cancelAuction,
     createAuction,
@@ -254,4 +414,5 @@ module.exports = {
     getCurrentBids,
     updateBid,
     getTopBidders,
+    getAuctionStats,
 };
