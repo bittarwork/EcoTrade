@@ -13,22 +13,27 @@ const OrdersPage = () => {
     const [statusMessage, setStatusMessage] = useState('');
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [requestsLoading, setRequestsLoading] = useState(true);
     const apiUrl = process.env.REACT_APP_API_URL;
+
+    // Auto-hide success/error message after 4s
+    useEffect(() => {
+        if (!statusMessage) return;
+        const t = setTimeout(() => setStatusMessage(''), 4000);
+        return () => clearTimeout(t);
+    }, [statusMessage]);
 
     useEffect(() => {
         const fetchRequests = async () => {
-            if (!user) return; // التحقق من وجود user قبل المتابعة
+            if (!user) return;
+            setRequestsLoading(true);
             try {
                 const url = user.role === 'admin'
                     ? `${apiUrl}/requests/grouped`
                     : `${apiUrl}/requests/${user.id}`;
-
                 const response = await axios.get(url, {
-                    headers: {
-                        Authorization: `Bearer ${user.token}`,
-                    }
+                    headers: { Authorization: `Bearer ${user.token}` },
                 });
-
                 if (user.role === 'admin') {
                     setGroupedRequests(response.data);
                 } else {
@@ -36,12 +41,13 @@ const OrdersPage = () => {
                 }
             } catch (error) {
                 console.error(error);
+                setStatusMessage('فشل تحميل الطلبات. تحقق من الاتصال.');
+            } finally {
+                setRequestsLoading(false);
             }
         };
 
-        if (!loading && user) {
-            fetchRequests();
-        }
+        if (!loading && user) fetchRequests();
     }, [apiUrl, user, loading]);
 
     const createRequest = async (newRequest) => {
@@ -168,37 +174,47 @@ const OrdersPage = () => {
     );
 
     return (
-        <div className="min-h-screen ">
-
-
+        <div className="min-h-screen bg-gray-50/50" dir="rtl">
             {user ? (
+                <div className="p-4 sm:p-6 mb-6 max-w-6xl mx-auto">
+                    <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-center text-gray-800">
+                        {user.role === 'admin' ? 'إدارة الطلبات' : 'طلباتك'}
+                    </h1>
 
-                <div className="p-6 mb-6">
-                    {user && user.role === 'admin' ? (
-                        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">عرض كامل الطلبات المتلقاة الى الموقع</h1>
-                    ) : (
-                        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">طلباتك</h1>
-                    )}
                     {statusMessage && (
-                        <div className="mt-4">
-                            <p className={`font-semibold text-center ${statusMessage.includes('خطأ') ? 'text-red-500' : 'text-green-600'}`}>
-                                {statusMessage}
-                            </p>
+                        <div
+                            role="alert"
+                            className={`mb-4 py-3 px-4 rounded-lg text-center font-medium ${
+                                statusMessage.includes('خطأ') || statusMessage.includes('فشل')
+                                    ? 'bg-red-50 text-red-700 border border-red-200'
+                                    : 'bg-green-50 text-green-700 border border-green-200'
+                            }`}
+                        >
+                            {statusMessage}
                         </div>
                     )}
-                    <div className="flex gap-x-3 justify-end items-center mb-4">
-                        <input
-                            type="text"
-                            placeholder="بحث عن عنوان الطلب..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="border border-gray-300 rounded px-4 py-2 w-64 shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <label>:قم بالبحث</label>
-                        {user.role === "admin" ? "" : (
+
+                    <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center mb-6">
+                        {user.role !== 'admin' && (
+                            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                <label htmlFor="orders-search" className="text-sm font-medium text-gray-600">
+                                    بحث عن عنوان الطلب
+                                </label>
+                                <input
+                                    id="orders-search"
+                                    type="text"
+                                    placeholder="أدخل جزء من العنوان..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="border border-gray-300 rounded-lg px-4 py-2 w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
+                        )}
+                        {user.role !== 'admin' && (
                             <button
+                                type="button"
                                 onClick={() => setIsPopupOpen(true)}
-                                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200 shadow"
+                                className="bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition duration-200 shadow-sm font-medium"
                             >
                                 إنشاء طلب جديد
                             </button>
@@ -215,27 +231,34 @@ const OrdersPage = () => {
                         />
                     )}
 
-                    {user.role === 'admin' ? (
+                    {requestsLoading ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+                            <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-3" />
+                            <p>جاري تحميل الطلبات...</p>
+                        </div>
+                    ) : user.role === 'admin' ? (
                         groupedRequests.length > 0 ? (
                             <GroupedRequestsList
                                 groupedRequests={groupedRequests}
                                 onUpdateStatus={updateRequestStatus}
-                                onDeleteRequest={deleteRequest} // تمرير دالة الحذف
-                                onCancelRequest={cancelRequest} // تمرير دالة الإلغاء
+                                onDeleteRequest={deleteRequest}
+                                onCancelRequest={cancelRequest}
                             />
                         ) : (
-                            <div className="text-center text-gray-500 p-4 border border-gray-300 rounded-lg">
+                            <div className="text-center text-gray-500 p-8 border border-gray-200 rounded-xl bg-white">
                                 <p>لا توجد طلبات متاحة حالياً.</p>
                             </div>
                         )
+                    ) : filteredRequests.length > 0 ? (
+                        <RequestsList
+                            requests={filteredRequests}
+                            onUpdateStatus={updateRequestStatus}
+                            userRole={user.role}
+                        />
                     ) : (
-                        filteredRequests.length > 0 ? (
-                            <RequestsList requests={filteredRequests} onUpdateStatus={updateRequestStatus} userRole={user.role} />
-                        ) : (
-                            <div className="text-center text-gray-500 p-4 border border-gray-300 rounded-lg">
-                                <p>لا توجد مزادات متاحة حالياً.</p>
-                            </div>
-                        )
+                        <div className="text-center text-gray-500 p-8 border border-gray-200 rounded-xl bg-white">
+                            <p>{searchQuery ? 'لا توجد نتائج تطابق البحث.' : 'لا توجد طلبات. يمكنك إنشاء طلب جديد.'}</p>
+                        </div>
                     )}
 
 

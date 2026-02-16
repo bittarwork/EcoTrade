@@ -43,50 +43,73 @@ const RequestPopup = ({ onClose, onCreateRequest }) => {
         onClose();
     };
 
+    // Close on Escape key
+    useEffect(() => {
+        const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [onClose]);
+
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-8 rounded shadow-lg w-11/12 max-w-lg">
-                <h2 className="text-2xl font-semibold text-center mb-6">إنشاء طلب جديد</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <input
-                        type="text"
-                        value={newRequest.address}
-                        readOnly
-                        placeholder="عنوان الطلب (حدد الموقع على الخريطة)"
-                        className="block w-full p-3 border border-gray-300 rounded bg-gray-100 focus:outline-none"
-                    />
-                    <input
-                        type="text"
-                        name="scrapType"
-                        placeholder="نوع الخردة"
-                        value={newRequest.scrapType}
-                        onChange={(e) => setNewRequest({ ...newRequest, scrapType: e.target.value })}
-                        className="block w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                        required
-                    />
-                    <input
-                        type="file"
-                        multiple
-                        onChange={handleImageChange}
-                        className="block w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                    <div className="mt-4">
-                        <MapComponent
-                            position={newRequest.position}
-                            setPosition={(pos) => setNewRequest({ ...newRequest, position: pos })}
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4" dir="rtl" role="dialog" aria-modal="true" aria-labelledby="request-popup-title">
+            <button type="button" onClick={onClose} className="absolute inset-0 cursor-default" aria-label="إغلاق" />
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative z-10 cursor-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="p-6 border-b border-gray-100">
+                    <h2 id="request-popup-title" className="text-xl font-semibold text-gray-800">إنشاء طلب جديد</h2>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label htmlFor="request-address" className="block text-sm font-medium text-gray-700 mb-1">العنوان (حدد الموقع على الخريطة)</label>
+                        <input
+                            id="request-address"
+                            type="text"
+                            value={newRequest.address}
+                            readOnly
+                            placeholder="اختر نقطة على الخريطة"
+                            className="block w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none"
                         />
                     </div>
-                    <div className="flex justify-between mt-6">
+                    <div>
+                        <label htmlFor="request-scrapType" className="block text-sm font-medium text-gray-700 mb-1">نوع الخردة</label>
+                        <input
+                            id="request-scrapType"
+                            type="text"
+                            name="scrapType"
+                            placeholder="مثال: نحاس، ألمنيوم..."
+                            value={newRequest.scrapType}
+                            onChange={(e) => setNewRequest({ ...newRequest, scrapType: e.target.value })}
+                            className="block w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">الصور (حتى 5)</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageChange}
+                            className="block w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        />
+                    </div>
+                    <div>
+                        <span className="block text-sm font-medium text-gray-700 mb-2">الموقع على الخريطة</span>
+                        <MapComponent
+                            position={newRequest.position}
+                            setPosition={(pos) => setNewRequest(prev => ({ ...prev, position: pos }))}
+                        />
+                    </div>
+                    <div className="flex gap-3 pt-4">
                         <button
                             type="submit"
-                            className="bg-green-500 text-white px-5 py-2 rounded hover:bg-green-600 transition-colors"
+                            className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition"
                         >
-                            إرسال
+                            إرسال الطلب
                         </button>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="bg-red-500 text-white px-5 py-2 rounded hover:bg-red-600 transition-colors"
+                            className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
                         >
                             إلغاء
                         </button>

@@ -16,6 +16,7 @@ import { UserProvider } from './context/UserContext';
 import UserContext from './context/UserContext';
 import Termofuse from "./pages/Termofuse";
 import Privacypolicy from './pages/Privacypolicy';
+import SupportPage from './pages/SupportPage';
 import UserAdmin from './pages/admin/UserAdmin';
 import AdminScrapItems from './pages/admin/AdminScrapItems';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -58,6 +59,7 @@ const AppRoutes = () => {
       <Route path="/register" element={<RegularRoute><RegisterPage /></RegularRoute>} />
       <Route path="/terms-of-service" element={<RegularRoute><Termofuse /></RegularRoute>} />
       <Route path="/privacy-policy" element={<RegularRoute><Privacypolicy /></RegularRoute>} />
+      <Route path="/support" element={<RegularRoute><SupportPage /></RegularRoute>} />
       <Route path="/developers" element={<RegularRoute><DevelopersPage /></RegularRoute>} />
       
       {/* User Routes - Can be accessed by both admin and users */}

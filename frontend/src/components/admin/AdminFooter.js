@@ -32,7 +32,7 @@ const AdminFooter = () => {
                         شروط الخدمة
                     </a>
                     <span className="text-gray-400">•</span>
-                    <a href="/contact" className="text-blue-600 hover:text-blue-800 transition-colors">
+                    <a href="/support" className="text-blue-600 hover:text-blue-800 transition-colors">
                         الدعم
                     </a>
                 </div>

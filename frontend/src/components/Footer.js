@@ -15,6 +15,7 @@ const Footer = () => {
                 <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-2">
                     <h2 className="text-lg font-semibold mb-2">روابط مفيدة</h2>
                     <Link to="/contact" className="hover:text-gray-600 transition mb-1">تواصل مع المدراء</Link>
+                    <Link to="/support" className="hover:text-gray-600 transition mb-1">الدعم</Link>
                     <Link to="/developers" className="hover:text-gray-600 transition mb-1">معلومات المطورين</Link>
                     <Link to="/privacy-policy" className="hover:text-gray-600 transition mb-1">سياسة الخصوصية</Link>
                     <Link to="/terms-of-service" className="hover:text-gray-600 transition mb-1">شروط الخدمة</Link>
