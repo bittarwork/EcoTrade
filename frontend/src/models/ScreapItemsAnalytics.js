@@ -1,102 +1,150 @@
 import React from 'react';
-import { Bar, Pie } from 'react-chartjs-2';
+import { Bar, Doughnut } from 'react-chartjs-2';
 import 'chart.js/auto';
 
-const ScreapItemsAnalytics = ({ scrapItems }) => {
+export default function ScreapItemsAnalytics({ scrapItems }) {
     const categories = ['Metals', 'Plastics', 'Electronics', 'Paper and Cardboard', 'Furniture'];
     const statuses = ['Received', 'Processed', 'Ready for Recycling', 'Ready for Auction'];
-    const sources = ['User Request', 'Admin Manual Entry'];
 
-    // حساب المتوسطات
-    const averageEstimatedPrice = scrapItems.reduce((acc, item) => acc + item.estimatedPrice, 0) / scrapItems.length || 0;
-    const averageQuantity = scrapItems.reduce((acc, item) => acc + item.quantity, 0) / scrapItems.length || 0;
+    // Calculate statistics
+    const totalValue = scrapItems.reduce((acc, item) => acc + item.estimatedPrice, 0);
+    const totalQuantity = scrapItems.reduce((acc, item) => acc + item.quantity, 0);
 
-    // إعداد البيانات للفئات
+    // Calculate category distribution
     const categoryDistribution = categories.map(category => {
         return scrapItems.filter(item => item.category === category).length;
     });
 
-    // إعداد البيانات للحالة
+    // Calculate status distribution
     const statusDistribution = statuses.map(status => {
         return scrapItems.filter(item => item.status === status).length;
     });
 
-    // إعداد البيانات للمصدر
-    const sourceDistribution = sources.map(source => {
-        return scrapItems.filter(item => item.source === source).length;
-    });
+    // Category chart data
+    const categoryChartData = {
+        labels: categories.map(cat => {
+            const emoji = {
+                'Metals': '🔩 معادن',
+                'Plastics': '♻️ بلاستيك',
+                'Electronics': '💻 إلكترونيات',
+                'Paper and Cardboard': '📄 ورق وكرتون',
+                'Furniture': '🪑 أثاث'
+            };
+            return emoji[cat] || cat;
+        }),
+        datasets: [{
+            label: 'عدد المواد',
+            data: categoryDistribution,
+            backgroundColor: [
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(245, 158, 11, 0.8)',
+                'rgba(139, 92, 246, 0.8)',
+                'rgba(239, 68, 68, 0.8)',
+            ],
+            borderColor: [
+                'rgba(59, 130, 246, 1)',
+                'rgba(16, 185, 129, 1)',
+                'rgba(245, 158, 11, 1)',
+                'rgba(139, 92, 246, 1)',
+                'rgba(239, 68, 68, 1)',
+            ],
+            borderWidth: 2,
+            borderRadius: 8,
+        }],
+    };
+
+    // Status chart data
+    const statusChartData = {
+        labels: ['📥 مستلم', '⚙️ معالج', '♻️ جاهز للتدوير', '🔨 جاهز للمزاد'],
+        datasets: [{
+            label: 'عدد المواد',
+            data: statusDistribution,
+            backgroundColor: [
+                'rgba(156, 163, 175, 0.8)',
+                'rgba(251, 191, 36, 0.8)',
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(34, 197, 94, 0.8)',
+            ],
+            borderColor: [
+                'rgba(156, 163, 175, 1)',
+                'rgba(251, 191, 36, 1)',
+                'rgba(59, 130, 246, 1)',
+                'rgba(34, 197, 94, 1)',
+            ],
+            borderWidth: 2,
+        }],
+    };
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 12,
+                    font: { size: 11 }
+                }
+            },
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { font: { size: 10 } }
+            },
+            x: {
+                ticks: { font: { size: 10 } }
+            }
+        }
+    };
+
+    const doughnutOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 12,
+                    font: { size: 11 }
+                }
+            },
+        }
+    };
 
     return (
-        <div className="p-6 bg-gray-100 min-h-screen">
-
-
-            <div className="flex flex-col md:flex-row justify-around mb-8">
-                <div className="bg-white p-6 rounded-lg shadow-md text-center">
-                    <h3 className="text-2xl font-semibold mb-2">المتوسطات</h3>
-                    <div className="text-xl">
-                        <p>متوسط السعر التقديري: <span className="font-bold">{averageEstimatedPrice.toLocaleString()} ل.س</span></p>
-                        <p>متوسط الكميات: <span className="font-bold">{averageQuantity.toFixed(2)} طن</span></p>
-                    </div>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5" dir="rtl">
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
+                    <div className="text-sm opacity-90 mb-1">إجمالي المواد</div>
+                    <div className="text-3xl font-bold">{scrapItems.length}</div>
+                </div>
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
+                    <div className="text-sm opacity-90 mb-1">القيمة الإجمالية</div>
+                    <div className="text-2xl font-bold">{totalValue.toLocaleString()} ل.س</div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
+                    <div className="text-sm opacity-90 mb-1">الكمية الإجمالية</div>
+                    <div className="text-2xl font-bold">{totalQuantity.toFixed(1)} طن</div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-4 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-2">التوزيع حسب الفئات</h3>
-                    <Bar
-                        data={{
-                            labels: categories,
-                            datasets: [
-                                {
-                                    label: 'عدد العناصر',
-                                    data: categoryDistribution,
-                                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                                },
-                            ],
-                        }}
-                        options={{ responsive: true }}
-                    />
+            {/* Charts */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Category Distribution */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                    <h3 className="text-sm font-bold text-gray-800 mb-3">التوزيع حسب الفئات</h3>
+                    <Bar data={categoryChartData} options={chartOptions} />
                 </div>
 
-                <div className="bg-white p-4 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-2">التوزيع حسب الحالة</h3>
-                    <Bar
-                        data={{
-                            labels: statuses,
-                            datasets: [
-                                {
-                                    label: 'عدد العناصر',
-                                    data: statusDistribution,
-                                    backgroundColor: 'rgba(153, 102, 255, 0.6)',
-                                },
-                            ],
-                        }}
-                        options={{ responsive: true }}
-                    />
-                </div>
-
-                <div className="bg-white p-4 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-2">التوزيع حسب المصدر</h3>
-                    <Pie
-                        data={{
-                            labels: sources,
-                            datasets: [
-                                {
-                                    label: 'عدد العناصر',
-                                    data: sourceDistribution,
-                                    backgroundColor: [
-                                        'rgba(255, 99, 132, 0.6)',
-                                        'rgba(54, 162, 235, 0.6)',
-                                    ],
-                                },
-                            ],
-                        }}
-                        options={{ responsive: true }}
-                    />
+                {/* Status Distribution */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                    <h3 className="text-sm font-bold text-gray-800 mb-3">التوزيع حسب الحالة</h3>
+                    <Doughnut data={statusChartData} options={doughnutOptions} />
                 </div>
             </div>
         </div>
     );
-};
-
-export default ScreapItemsAnalytics;
+}

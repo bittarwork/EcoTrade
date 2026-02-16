@@ -1,5 +1,4 @@
-
-
+// Admin Scrap Items Management Page - Simple & Consistent UI
 import React, { useContext, useEffect, useState } from 'react';
 import UserContext from '../../context/UserContext';
 import Slider from 'react-slick';
@@ -9,17 +8,31 @@ import ConfirmModal from '../../models/ConfirmModal';
 import PopupForm from '../../models/ScrapFormPopup';
 import ScreapItemsAnalytics from '../../models/ScreapItemsAnalytics';
 import { API_BASE_URL } from '../../config/api';
+import {
+    PlusIcon,
+    SearchIcon,
+    FilterIcon,
+    TrashIcon,
+    PencilAltIcon,
+    ChartBarIcon,
+} from '@heroicons/react/outline';
 
 const AdminScrapItems = () => {
     const { user } = useContext(UserContext);
     const [scrapItems, setScrapItems] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [actionLoading, setActionLoading] = useState(null);
+    const [toast, setToast] = useState({ show: false, message: '', type: '' });
     const [isModalOpen, setModalOpen] = useState(false);
-    const [isPopupOpen, setPopupOpen] = useState(false); // التحكم في البوب أب
+    const [isPopupOpen, setPopupOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [currentItemId, setCurrentItemId] = useState(null);
+    const [showAnalytics, setShowAnalytics] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -32,6 +45,7 @@ const AdminScrapItems = () => {
         source: '',
         images: [],
     });
+
     const resetForm = () => {
         setFormData({
             name: '',
@@ -44,27 +58,53 @@ const AdminScrapItems = () => {
             source: '',
             images: [],
         });
+        setIsEditing(false);
+        setCurrentItemId(null);
     };
+
+    // Auto-hide toast after 4 seconds
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast({ show: false, message: '', type: '' });
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
+
+    const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+    };
+
+    // Filter items
+    const filteredItems = scrapItems.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             item.barcode.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
+        const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+        return matchesSearch && matchesCategory && matchesStatus;
+    });
 
     const fetchScrapItems = async () => {
         setLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/scrap`);
             if (!response.ok) {
-                const errorMessage = await response.text();
-                throw new Error(`فشل في جلب البيانات: ${errorMessage}`);
+                throw new Error('فشل في جلب البيانات');
             }
             const data = await response.json();
             setScrapItems(data);
+            setError(null);
         } catch (err) {
             setError(err.message);
+            showToast('فشل في تحميل المواد', 'error');
         } finally {
             setLoading(false);
         }
     };
 
     const createScrapItem = async (formData) => {
-        setLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/scrap`, {
                 method: 'POST',
@@ -72,21 +112,19 @@ const AdminScrapItems = () => {
             });
 
             if (!response.ok) {
-                const errorMessage = await response.text();
-                throw new Error(`فشل في إنشاء العنصر: ${errorMessage}`);
+                throw new Error('فشل في إنشاء المادة');
             }
 
             const data = await response.json();
             setScrapItems((prevItems) => [...prevItems, data.data]);
+            showToast('تم إضافة المادة بنجاح');
         } catch (err) {
             setError(err.message);
-        } finally {
-            setLoading(false);
+            showToast('فشل في إضافة المادة', 'error');
         }
     };
 
     const updateScrapItem = async (id, updatedFormData) => {
-        setLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/scrap/${id}`, {
                 method: 'PUT',
@@ -94,8 +132,7 @@ const AdminScrapItems = () => {
             });
 
             if (!response.ok) {
-                const errorMessage = await response.text();
-                throw new Error(`فشل في تحديث العنصر: ${errorMessage}`);
+                throw new Error('فشل في تحديث المادة');
             }
 
             const updatedItem = await response.json();
@@ -105,26 +142,29 @@ const AdminScrapItems = () => {
             setIsEditing(false);
             setCurrentItemId(null);
             resetForm();
+            showToast('تم تحديث المادة بنجاح');
         } catch (err) {
             setError(err.message);
-        } finally {
-            setLoading(false);
+            showToast('فشل في تحديث المادة', 'error');
         }
     };
 
     const deleteScrapItem = async (id) => {
+        setActionLoading(id);
         try {
             const response = await fetch(`${process.env.REACT_APP_API_URL}/scrap/${id}`, {
                 method: 'DELETE',
             });
             if (!response.ok) {
-                const errorMessage = await response.text();
-                throw new Error(`فشل في حذف العنصر: ${errorMessage}`);
+                throw new Error('فشل في حذف المادة');
             }
             setScrapItems((prevItems) => prevItems.filter(item => item._id !== id));
+            showToast('تم حذف المادة بنجاح');
         } catch (err) {
             setError(err.message);
+            showToast('فشل في حذف المادة', 'error');
         } finally {
+            setActionLoading(null);
             setModalOpen(false);
         }
     };
@@ -148,19 +188,19 @@ const AdminScrapItems = () => {
         });
         setCurrentItemId(item._id);
         setIsEditing(true);
-        setPopupOpen(true); // فتح البوب أب
+        setPopupOpen(true);
     };
 
     const handleInputChange = (e) => {
         const { name, value, files } = e.target;
 
         if (name === "images") {
-            // التأكد من التعامل مع ملفات الصور
             setFormData({ ...formData, images: files });
         } else {
             setFormData({ ...formData, [name]: value });
         }
     };
+
     const settings = {
         dots: true,
         infinite: true,
@@ -177,7 +217,6 @@ const AdminScrapItems = () => {
         const newFormData = new FormData();
         for (const key in formData) {
             if (key === 'images') {
-                // التأكد من أن images هو FileList وتحويله إلى مصفوفة
                 Array.from(formData.images).forEach((file) => {
                     newFormData.append('images', file);
                 });
@@ -192,11 +231,8 @@ const AdminScrapItems = () => {
             createScrapItem(newFormData);
         }
         resetForm();
-        setPopupOpen(false); // إغلاق البوب أب بعد الإرسال
+        setPopupOpen(false);
     };
-
-
-
 
     useEffect(() => {
         if (user && user.role === "admin") {
@@ -204,134 +240,295 @@ const AdminScrapItems = () => {
         } else {
             setLoading(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     if (loading) {
-        return <h1 className="text-center text-xl">جارٍ التحميل...</h1>;
-    }
-
-    if (error) {
         return (
-            <div className="text-center">
-                <h1 className="text-xl text-red-500">خطأ: {error}</h1>
-                <button onClick={fetchScrapItems} className="mt-4 bg-blue-500 text-white py-2 px-4 rounded">إعادة المحاولة</button>
+            <div className="flex flex-col items-center justify-center py-20 text-gray-500" dir="rtl">
+                <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-sm font-medium">جاري تحميل المواد...</p>
             </div>
         );
     }
 
-    return (
-        <div className="container mx-auto p-4" dir='rtl'>
-            {user && user.role === "admin" ? (
-                <div>
-                    <h1 className="text-3xl font-bold mb-6 text-center">
-                        إدارة المواد
-                    </h1>
-                    <ScreapItemsAnalytics scrapItems={scrapItems} ></ScreapItemsAnalytics>
+    if (error) {
+        return (
+            <div className="text-center p-12 border border-red-200 rounded-2xl bg-red-50 shadow-sm" dir="rtl">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-100 mb-4">
+                    <svg className="h-10 w-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-red-800 mb-2">حدث خطأ</h3>
+                <p className="text-sm text-red-600 mb-4">{error}</p>
+                <button 
+                    onClick={fetchScrapItems}
+                    className="bg-red-600 text-white px-5 py-2.5 rounded-xl hover:bg-red-700 transition font-medium text-sm"
+                >
+                    إعادة المحاولة
+                </button>
+            </div>
+        );
+    }
 
-                    {/* زر إضافة عنصر جديد */}
-                    <button onClick={() => setPopupOpen(true)} className="bg-blue-500 text-white py-2 px-4 rounded mb-4">إضافة عنصر جديد</button>
+    if (!user || user.role !== "admin") {
+        return (
+            <div className="text-center p-12 border border-gray-200 rounded-2xl bg-white shadow-sm" dir="rtl">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 mb-4">
+                    <svg className="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">وصول غير مصرح</h3>
+                <p className="text-sm text-gray-600">لا تملك الصلاحيات اللازمة لعرض هذه الصفحة.</p>
+            </div>
+        );
+    }
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {scrapItems.map(item => (
-                            <div
-                                key={item._id}
-                                className="bg-white shadow-lg rounded-lg overflow-hidden  transform hover:shadow-xl transition-all duration-300 mb-6"
-                            >
-                                {/* Slider for Images */}
-                                <Slider {...settings}>
-                                    {item.images.map((img, index) => (
-                                        <div key={index} className="h-56">
-                                            <img
-                                                src={img}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover transition-opacity hover:opacity-90"
-                                                onError={(e) => { e.target.src = 'path/to/default-image.jpg'; }}
-                                            />
-                                        </div>
-                                    ))}
-                                </Slider>
+    const ScrapItemCard = ({ item }) => {
+        const isLoading = actionLoading === item._id;
 
-                                {/* Content Section */}
-                                <div className="p-6">
-                                    {/* Name */}
-                                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{item.name}</h2>
+        return (
+            <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white hover:shadow-xl transition-all duration-300" dir='rtl'>
+                {/* Status badge */}
+                <div className="absolute top-3 left-3 z-10">
+                    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        item.status === 'Ready for Auction' ? 'bg-emerald-100 text-emerald-800' :
+                        item.status === 'Ready for Recycling' ? 'bg-blue-100 text-blue-800' :
+                        item.status === 'Processed' ? 'bg-amber-100 text-amber-800' :
+                        'bg-gray-100 text-gray-800'
+                    }`}>
+                        {item.status === 'Ready for Auction' ? '🔨 جاهز للمزاد' :
+                         item.status === 'Ready for Recycling' ? '♻️ جاهز للتدوير' :
+                         item.status === 'Processed' ? '⚙️ معالج' :
+                         '📥 مستلم'}
+                    </span>
+                </div>
 
-                                    {/* Description */}
-                                    <p className="text-gray-700 text-sm mb-4">{item.description}</p>
-
-                                    {/* Information Grid */}
-                                    <div className="grid grid-cols-2 gap-4 text-gray-800">
-                                        <div className="flex items-center">
-                                            <span className="font-semibold mr-2">الفئة:</span>
-                                            <span className="text-gray-600">{item.category}</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <span className="font-semibold mr-2">الكمية:</span>
-                                            <span className="text-gray-600">{item.quantity}</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <span className="font-semibold mr-2">الحالة:</span>
-                                            <span className="text-gray-600">{item.status}</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <span className="font-semibold mr-2">السعر التقديري:</span>
-                                            <span className="text-gray-600">{item.estimatedPrice} ل.س</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Status Label */}
-                                    <div className="mt-4">
-                                        {item.description.includes("Auto-generated item from request") ? (
-                                            <span className="inline-block bg-green-500 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                                                Auto-generated
-                                            </span>
-                                        ) : (
-                                            <span className="inline-block bg-yellow-500 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                                                Regular
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="mt-6 flex gap-x-2 justify-between">
-                                        <button
-                                            onClick={() => handleEditClick(item)}
-                                            className="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition duration-200 flex-1 mr-2"
-                                        >
-                                            تعديل
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteClick(item._id)}
-                                            className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition duration-200 flex-1"
-                                        >
-                                            حذف
-                                        </button>
-                                    </div>
-                                </div>
+                {/* Image slider */}
+                <div className='relative'>
+                    <Slider {...settings}>
+                        {item.images.map((image, index) => (
+                            <div key={index}>
+                                <img 
+                                    src={image} 
+                                    alt={item.name} 
+                                    className="w-full h-56 object-cover" 
+                                    onError={(e) => { e.target.src = 'https://via.placeholder.com/400x300?text=No+Image'; }}
+                                />
                             </div>
                         ))}
+                    </Slider>
+                    {/* Category badge */}
+                    <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-semibold text-blue-600">
+                        {item.category === 'Metals' ? '🔩 معادن' :
+                         item.category === 'Plastics' ? '♻️ بلاستيك' :
+                         item.category === 'Electronics' ? '💻 إلكترونيات' :
+                         item.category === 'Paper and Cardboard' ? '📄 ورق وكرتون' :
+                         '🪑 أثاث'}
+                    </div>
+                </div>
 
+                {/* Content */}
+                <div className="p-5">
+                    <h3 className="font-bold text-xl mb-2 text-gray-800 line-clamp-1">{item.name}</h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
+                    
+                    {/* Info grid */}
+                    <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
+                        <div className="bg-gray-50 rounded-lg p-2">
+                            <p className="text-gray-500 text-xs">الكمية</p>
+                            <p className="font-semibold text-gray-800">{item.quantity} طن</p>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-2">
+                            <p className="text-gray-500 text-xs">السعر التقديري</p>
+                            <p className="font-semibold text-green-700">{item.estimatedPrice.toLocaleString()} ل.س</p>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-2">
+                            <p className="text-gray-500 text-xs">الباركود</p>
+                            <p className="font-semibold text-blue-700 font-mono text-xs">{item.barcode}</p>
+                        </div>
+                        <div className="bg-purple-50 rounded-lg p-2">
+                            <p className="text-gray-500 text-xs">المصدر</p>
+                            <p className="font-semibold text-purple-700 text-xs">
+                                {item.source === 'User Request' ? '👤 مستخدم' : '✍️ يدوي'}
+                            </p>
+                        </div>
                     </div>
 
-                    {/* البوب أب للإضافة والتعديل */}
-                    <PopupForm
-                        isOpen={isPopupOpen}
-                        onClose={() => { setPopupOpen(false); resetForm(); }}
-                        formData={formData}
-                        handleInputChange={handleInputChange}
-                        handleSubmit={handleSubmit}
-                        isEditing={isEditing}
-                    />
+                    {/* Actions */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            onClick={() => handleEditClick(item)}
+                            disabled={isLoading}
+                            className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition ${
+                                isLoading ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
+                            }`}
+                        >
+                            <PencilAltIcon className="h-4 w-4" />
+                            تعديل
+                        </button>
+                        <button 
+                            onClick={() => handleDeleteClick(item._id)}
+                            disabled={isLoading}
+                            className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-xs font-medium disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
+                        >
+                            <TrashIcon className="h-4 w-4" />
+                            حذف
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
-                    {/* المودال لتأكيد الحذف */}
-                    <ConfirmModal
-                        isOpen={isModalOpen}
-                        onClose={() => setModalOpen(false)}
-                        onConfirm={() => { deleteScrapItem(itemToDelete); setModalOpen(false); }}
-                    />
+    return (
+        <div className="space-y-6" dir="rtl">
+            {/* Toast notification */}
+            {toast.show && (
+                <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border animate-fadeIn ${
+                    toast.type === 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                }`}>
+                    {toast.type === 'error' ? (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    ) : (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    )}
+                    <span className="font-medium">{toast.message}</span>
+                </div>
+            )}
+
+            {/* Page header */}
+            <div className="mb-6">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">إدارة المواد</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                    إضافة وإدارة وتتبع المواد القابلة لإعادة التدوير
+                </p>
+            </div>
+
+            {/* Statistics - Toggle */}
+            {showAnalytics && <ScreapItemsAnalytics scrapItems={scrapItems} />}
+
+            {/* Search and filters */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                <div className="flex flex-col gap-3">
+                    {/* Search and buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="relative flex-1">
+                            <SearchIcon className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="ابحث عن مادة..."
+                                className="w-full rounded-xl border border-gray-300 py-2.5 pr-10 pl-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <button
+                            onClick={() => setShowAnalytics(!showAnalytics)}
+                            className="flex items-center justify-center gap-2 bg-purple-600 text-white px-5 py-2.5 rounded-xl hover:bg-purple-700 transition font-medium text-sm shadow-sm"
+                        >
+                            <ChartBarIcon className="h-5 w-5" />
+                            {showAnalytics ? 'إخفاء التحليلات' : 'عرض التحليلات'}
+                        </button>
+                        <button
+                            onClick={() => { resetForm(); setPopupOpen(true); }}
+                            className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-700 transition font-medium text-sm shadow-sm"
+                        >
+                            <PlusIcon className="h-5 w-5" />
+                            إضافة مادة جديدة
+                        </button>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <FilterIcon className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-600 font-medium">الفئة:</span>
+                        {['all', 'Metals', 'Plastics', 'Electronics', 'Paper and Cardboard', 'Furniture'].map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setCategoryFilter(cat)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                                    categoryFilter === cat ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                {cat === 'all' ? 'الكل' : cat === 'Metals' ? 'معادن' : cat === 'Plastics' ? 'بلاستيك' : 
+                                 cat === 'Electronics' ? 'إلكترونيات' : cat === 'Paper and Cardboard' ? 'ورق وكرتون' : 'أثاث'}
+                            </button>
+                        ))}
+                        
+                        <span className="text-sm text-gray-600 font-medium ml-3">الحالة:</span>
+                        {['all', 'Received', 'Processed', 'Ready for Recycling', 'Ready for Auction'].map(status => (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                                    statusFilter === status ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                {status === 'all' ? 'الكل' : 
+                                 status === 'Received' ? 'مستلم' : 
+                                 status === 'Processed' ? 'معالج' : 
+                                 status === 'Ready for Recycling' ? 'جاهز للتدوير' : 'جاهز للمزاد'}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Popup */}
+            {isPopupOpen && (
+                <PopupForm
+                    isOpen={isPopupOpen}
+                    onClose={() => { setPopupOpen(false); resetForm(); }}
+                    formData={formData}
+                    handleInputChange={handleInputChange}
+                    handleSubmit={handleSubmit}
+                    isEditing={isEditing}
+                />
+            )}
+
+            {/* Confirmation Modal */}
+            <ConfirmModal
+                isOpen={isModalOpen}
+                onClose={() => setModalOpen(false)}
+                onConfirm={() => { deleteScrapItem(itemToDelete); }}
+                title="حذف المادة"
+                message="سيتم حذف هذه المادة نهائياً. هل أنت متأكد؟"
+                type="danger"
+                loading={!!actionLoading}
+                confirmText="حذف"
+            />
+
+            {/* Items grid */}
+            {filteredItems.length === 0 ? (
+                <div className="text-center p-12 border border-gray-200 rounded-2xl bg-white shadow-sm">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 mb-4">
+                        <svg className="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">لا توجد مواد</h3>
+                    <p className="text-sm text-gray-500">
+                        {searchTerm || categoryFilter !== 'all' || statusFilter !== 'all'
+                            ? 'لا توجد نتائج تطابق البحث أو التصفية.' 
+                            : 'لم يتم إضافة أي مواد بعد.'}
+                    </p>
                 </div>
             ) : (
-                <p>لا تملك الصلاحيات اللازمة لعرض هذه الصفحة.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredItems.map(item => (
+                        <ScrapItemCard
+                            key={item._id}
+                            item={item}
+                        />
+                    ))}
+                </div>
             )}
         </div>
     );

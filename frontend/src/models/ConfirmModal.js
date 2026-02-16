@@ -8,7 +8,17 @@ import {
     CheckCircleIcon 
 } from '@heroicons/react/outline';
 
-const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, type = 'danger', confirmText, cancelText, loading = false }) => {
+const ConfirmModal = ({ 
+    isOpen, 
+    onClose, 
+    onConfirm, 
+    title, 
+    message, 
+    type = 'danger', 
+    confirmText = 'تأكيد', 
+    cancelText = 'إلغاء', 
+    loading = false 
+}) => {
     if (!isOpen) return null;
 
     // Type-based styling
@@ -84,7 +94,7 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, type = 'dang
                             disabled={loading}
                             className="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {cancelText || 'إلغاء'}
+                            {cancelText}
                         </button>
                         <button
                             type="button"
@@ -101,7 +111,7 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, type = 'dang
                                     جاري المعالجة...
                                 </span>
                             ) : (
-                                confirmText || 'تأكيد'
+                                confirmText
                             )}
                         </button>
                     </div>
