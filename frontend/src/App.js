@@ -21,7 +21,7 @@ import AdminScrapItems from './pages/admin/AdminScrapItems';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import './index.css';
 
-// Protected Route Component for Admin
+// Protected Route Component for Admin - Admin only
 const ProtectedAdminRoute = ({ children }) => {
   const { user, loading } = useContext(UserContext);
   
@@ -42,6 +42,30 @@ const ProtectedAdminRoute = ({ children }) => {
   }
   
   return <AdminLayout>{children}</AdminLayout>;
+};
+
+// Protected Route for logged-in users (both admin and regular) - Orders & Auctions
+const ProtectedUserRoute = ({ children }) => {
+  const { user, loading } = useContext(UserContext);
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Admin uses AdminLayout, regular users use Layout
+  return user.role === 'admin' ? (
+    <AdminLayout>{children}</AdminLayout>
+  ) : (
+    <Layout>{children}</Layout>
+  );
 };
 
 // Regular Route Component
@@ -66,8 +90,9 @@ const AppRoutes = () => {
       {/* Admin Routes with Admin Layout */}
       <Route path="/dashboard" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
       <Route path="/users" element={<ProtectedAdminRoute><UserAdmin /></ProtectedAdminRoute>} />
-      <Route path="/orders" element={<ProtectedAdminRoute><OrdersPage /></ProtectedAdminRoute>} />
-      <Route path="/auctions" element={<ProtectedAdminRoute><AuctionsPage /></ProtectedAdminRoute>} />
+      {/* Orders & Auctions - Accessible by both admin and regular users */}
+      <Route path="/orders" element={<ProtectedUserRoute><OrdersPage /></ProtectedUserRoute>} />
+      <Route path="/auctions" element={<ProtectedUserRoute><AuctionsPage /></ProtectedUserRoute>} />
       <Route path="/scrap" element={<ProtectedAdminRoute><AdminScrapItems /></ProtectedAdminRoute>} />
       <Route path="/contact" element={<ProtectedAdminRoute><ContactPage /></ProtectedAdminRoute>} />
       <Route path="/auction-room-admin/:auctionId" element={<ProtectedAdminRoute><AdminAuctionRoom /></ProtectedAdminRoute>} />
