@@ -125,53 +125,7 @@ const getAuctionDetails = async (req, res) => {
     }
 };
 
-// دالة لإغلاق مزاد معين
-const closeAuction = async (req, res) => {
-    const { auctionId } = req.params; // الحصول على auctionId من معلمات الطلب
-
-    try {
-        // تحديث حالة المزاد إلى 'closed'
-        const auction = await Auction.findByIdAndUpdate(
-            auctionId,
-            { status: 'closed' },
-            { new: true } // إعادة الوثيقة المحدّثة
-        );
-
-        // التحقق مما إذا كان المزاد موجودًا
-        if (!auction) {
-            return res.status(404).json({ message: 'المزاد غير موجود.' });
-        }
-
-        // إعادة المزاد المحدّث كاستجابة
-        res.status(200).json({ message: 'المزاد مغلق بنجاح.', auction });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'حدث خطأ أثناء إغلاق المزاد.', error: error.message });
-    }
-};
-
-// دالة لحذف مزاد معين
-const deleteAuction = async (req, res) => {
-    const { auctionId } = req.params; // الحصول على auctionId من معلمات الطلب
-
-    try {
-        // حذف المزاد من قاعدة البيانات
-        const auction = await Auction.findByIdAndDelete(auctionId);
-
-        // التحقق مما إذا كان المزاد موجودًا
-        if (!auction) {
-            return res.status(404).json({ message: 'المزاد غير موجود.' });
-        }
-
-        // إعادة استجابة النجاح
-        res.status(200).json({ message: 'تم حذف المزاد بنجاح.' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'حدث خطأ أثناء حذف المزاد.', error: error.message });
-    }
-};
-
-// دالة لاسترجاع جميع العروض الحالية لمزاد معين
+// Get current bids for an auction
 const getCurrentBids = async (req, res) => {
     try {
         const { auctionId } = req.params;
